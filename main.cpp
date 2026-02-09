@@ -36,19 +36,20 @@ void AllCaps(string& word) {
     }
 }
 
-//recursively bubble sorts starting at the end of the table until the root
-void bubbleUp(int*& table, size_t i) {
-    if (i <= 1) return; //if we've reached the root or the table doesn't have any items, there's nothing more to sort
-    size_t parenti = getParent(i); //finds the parent of the current item
-    if (table[i] > table[parenti]) { //we switch the parent and the child if the child is bigger, since we start from the bottom and bigger ints go on top
-        swap(table[i], table[parenti]);
-        bubbleUp(table, parenti); //recursively continue with the int we just moved up into the parent index
-    }
+//recursively searches through the tree and returns the node whose data matches the given int, used by various functions
+Node* findInt(Node* current, int theint) {
+    if (current == NULL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NULL
+        return NULL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
+    } if (theint == current->getData()) { //if the current node's data matches the int, we return current because it's a match!
+        return current;
+    } //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
+    bool lr = theint < current->getData() ? 0 : 1; //BSTs are organized so that if the int is in the tree, it's guaranteed to be in that direction
+    return findInt(current->getNext(lr), theint); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
 }
 
 //recursively bubble sorts starting at the root of the heap until the end, goes down the paths with the bigger children
 void bubbleDown(int*& table, size_t i, size_t endi) {
-    size_t childi = getChild(i, 0); //left child, start assuming we're going with this one
+    /*size_t childi = getChild(i, 0); //left child, start assuming we're going with this one
     size_t right = getChild(i, 1); //right child
     if (childi >= endi) return; //if the left child is past the maximum i used, that means the node actually has no children, so we've reached the end and we stop here
     if (right < endi && table[right] > table[childi]) { //if the right child is (existant and) bigger than the left, we use that one instead
@@ -57,33 +58,29 @@ void bubbleDown(int*& table, size_t i, size_t endi) {
     if (table[childi] > table[i]) { //if the child is bigger than the current item, we move it up, since bigger ints go above
         swap(table[i], table[childi]); //move up through swappage, also makes the smaller parent go down
         bubbleDown(table, childi, endi); //recursively continue with the int we just moved down into the child index
-    }
+    }*/
 }
 
 //adds an int to the end of table and begins the bubble sort process upwards
-void addInt(int theint, int*& table, size_t& tablelen, size_t& endi) {
-    if (endi >= tablelen) reSize(table, tablelen); //if we need more room, double the length of table
+void addInt(Node*& root, int theint) {
     table[endi] = theint; //adds the int to the end
-    bubbleUp(table, endi); //recursively bubble sorts the heap starting from the new int
-    endi++; //increments the end i since there's one more item now
+    //bubbleUp(table, endi); //recursively bubble sorts the heap starting from the new int
 }
 
 //looks at a given input, and adds all valid ints in it into the table
-void parseInts(istream& stin, int*& table, size_t& tablelen, size_t& endi) { //stin = string + in, like cin = char + in, but sin is something else so I didn't go with that
+void parseInts(istream& stin, Node*& root) { //stin = string + in, like cin = char + in, but sin is something else so I didn't go with that
     int good = 0, bad = 0, ugly = 0; //counts the good, the bad (non-int), and the ugly (out of range) inputs
     for (int current;;) { //creates a current int to read into from stin, and loops until the end of the input
         if (stin >> current) { //gets the next chunk of data, skipping whitespace, and at the same time checks if it was valid input!
-            if (current < 1 || current > 1000) { //if it's out of range, we increment the ugly counter and continue to the next loop so we don't label it as another good
+            if (current < 1 || current > 999) { //if it's out of range, we increment the ugly counter and continue to the next loop so we don't label it as another good
                 ugly++;
                 continue;
             } //adds the int to the table and updates the heap accordingly
-            addInt(current, table, tablelen, endi);
+            addInt(root, current);
             good++; //increment the good counter because this was good input
-        }
-        else if (stin.eof()) { //if stin gave faulty input because it reached the end
+        } else if (stin.eof()) { //if stin gave faulty input because it reached the end
             break; //leave the loop
-        }
-        else { //if stin gave faulty input, and not because it was the end
+        } else { //if stin gave faulty input, and not because it was the end
             DisposeGarbage(stin); //dispose of the current faulty input up until whitespace
             bad++; //increments the bad counter because it was faulty input
         }
@@ -94,22 +91,22 @@ void parseInts(istream& stin, int*& table, size_t& tablelen, size_t& endi) { //s
     if (bad) {
         cout << '\n' << bad << " faulty item" << (bad != 1 ? "s" : "") << " in input; must be integers.";
     } //if we had out of range inputs, tell the user how many + instructions for the future
-    if (ugly) {                                                                       //jurisdiction, cause Maximillian Halifax only handles ints 1-1000
-        cout << '\n' << ugly << " integer" << (ugly != 1 ? "s" : "") << " found outside jurisdiction; must be 1-1000.";
+    if (ugly) {                                                                        //Bingo Seane Trevor no know how to wrangle ints outside 1-999 :(
+        cout << '\n' << ugly << " integer" << (ugly != 1 ? "s" : "") << " found outside area of expertise; must be 1-999.";
     }
 }
 
-//user types a string of integers, and we try to add those to the heap
-void typeInts(int*& table, size_t& tablelen, size_t& endi) {
+//user types a string of integers, and we try to add those to the tree
+void typeInts(Node*& root) {
     string ints; //string we input into
     cout << "\nEnter your integer(s).\n> ";
     getline(cin, ints); //get the input from the user
     stringstream stin(ints); //create a new stringstream so we can treat the ints string like cin in parseInts
-    parseInts(stin, table, tablelen, endi); //interprets the string as various ints, and adds them to the heap
+    parseInts(stin, root); //interprets the string as various ints, and adds them to the tree
 }
 
-//user chooses a file, which the program then reads ints from and adds those to the heap
-void readInts(int*& table, size_t& tablelen, size_t& endi) {
+//user chooses a file, which the program then reads ints from and adds those to the tree
+void readInts(Node*& root) {
     cout << "\nWhich file do you want to read from?\n> ";
     string file; //the file name
     getline(cin, file); //the user says which file to read from
@@ -117,8 +114,8 @@ void readInts(int*& table, size_t& tablelen, size_t& endi) {
     if (!stin) { //if no file was found say error and don't proceed with getting ints, because there's nowhere to get ints from
         cout << "\nNo file named \"" << file << "\" found.";
         return;
-    } //interprets the file text as various ints, and adds them to the heap
-    parseInts(stin, table, tablelen, endi);
+    } //interprets the file text as various ints, and adds them to the tree
+    parseInts(stin, root);
 }
 
 //removes the root of the heap, and adjusts the heap accordingly
@@ -135,48 +132,55 @@ void removeRoot(int*& table, size_t& endi, bool printText = true) {
     bubbleDown(table, 1, endi);//recursively bubble sorts the heap starting from the root to make sure the values are still sorted correctly; we just put a small int above the big ones, after all.
 }
 
-//prints the average of all the ints. This is actually pretty useful for testing
-void average(int*& table, size_t endi) {
-    if (endi == 1) { //error text and return because there's no ints in the heap to get the average value of
-        cout << "\nThere are no integers to average. (Type HELP for help)";
+//recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
+void printNode(Node* current, const string prefix = "", bool right = false, bool root = false) {
+    if (current == NULL) { //no ints in the tree to print, we know this because we manually check if children are null before recursively passing them back into this function, so if current is null it's guaranteed to be the first call
+        cout << "\nTree is empty, no integers to print. (Type HELP for help)";
         return;
     }
-    long long sum = 0; //the sum is a long long int in case we have like a million ints in the table, so we can fit them all in this big int
-    for (size_t i = 1; i < endi; i++) { //iterates through the table to add all the ints in the table to the sum
-        sum += table[i];
-    } //prints the average (multiplied by a floatified 1 so division doesn't truncate)
-    cout << "\nHeap average: " << 1.0 * sum / (endi - 1); //the amount of ints is endi-1 so that's the denominator
-}
-
-//recursively prints a visual representation of the heap with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
-void printNode(int*& table, size_t endi, size_t current, const string prefix = "") {
-    if (endi == 1) { //error text and return because there's no ints in the heap to print, and we don't wanna print any garbage data left there
-        cout << "\nHeap is empty, no integers to print. (Type HELP for help)";
-        return;
-    }
-    bool right = current % 2; //if the current node is a right child (if it's even, false). Works since right children are found using parent*2 + 1, and are therefore always at an odd index
-    bool root = current == 1; //if it's the root, we check because that has slighly different prefix rules
     string curve; //the curvy line that connects the vertical line or parent to the number, defaults to "" for the root
     if (!root) { //make the curve face the parent depending on which side the parent is on
         curve = right ? ",-- " : "'-- ";
     }
-    size_t childi = getChild(current, 1); //get the right child first
-    if (childi < endi) { //if the right child is in range (exists), print it!
+    Node* child = current->getNext(1); //get the right child first
+    if (child != NULL) { //if the right child exists, print it!
         //the prefix the child will use, also defaults to "" for the root, since the root's children aren't below anything
         string childPrefix = prefix; //we start with the current prefix, since whatever the parent is under the child will also be under                    _|
         if (!root) { //if this is a left child, the right child will have an extra line over it, since we just curved back towards the parent above. Visual: |_|
             childPrefix += !right ? "|   " : "    "; //otherwise just do a fake tab, we use spaces since our implementation must have consistent spacing on all consoles
         } //starts printing the left child with the new prefix
-        printNode(table, endi, childi, childPrefix);
-    } //prints the current node after everything to the left of it (printing in this order makes it so the tree/heap gets automatically spaced and formatted!)
-    cout << '\n' << prefix << curve << table[current]; //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
-    if (--childi < endi) { //decrements the childi to get to the left child (because right child i = left child i + 1), and print it if in range
+        printNode(child, childPrefix, true);
+    } //prints the current node after everything to the left of it (printing in this order makes it so the tree gets automatically spaced and formatted!)
+    cout << '\n' << prefix << curve << current->getData(); //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
+    child = current->getNext(0); //get the left child now
+    if (child != NULL) { //if the left child exists, print it!
         string childPrefix = prefix; //same general process as the right child
         if (!root) { //if this is a right child, the left child will have an extra line, since we're curving back towards the parent. Visual: _|'|
             childPrefix += right ? "|   " : "    "; //otherwise do the fake tab                                                                |
         } //starts printing the right child with the new prefix
-        printNode(table, endi, childi, childPrefix);
+        printNode(child, childPrefix, false);
     }
+}
+
+//recursively get (census) the sum and amount of all the ints, used by the average function
+void censeTree(Node* current, long long& sum, int& population) { //the correct verb is census but that's also the noun and it sounded weird to me so I used the incorrect word cense instead
+    if (current == NULL) return; //stop once we run out of nodes
+    population++; //increment in count cause we're checking an int
+    sum += current->getData(); //add the current node's int to the total
+    censeTree(current->getNext(0), sum, population); //continue checking through the left branch
+    censeTree(current->getNext(1), sum, population); //continue through the right branch
+}
+
+//prints the average of all the ints. This is actually pretty useful for testing
+void printAverage(Node* root) {
+    if (root == NULL) { //error text and return because there's no ints in the tree to get the average value of
+        cout << "\nThere are no integers to average. (Type HELP for help)";
+        return;
+    }
+    long long sum = 0; //the sum is a long long int in case we have like a million ints in the tree, so we can fit them all in this big int
+    int count = 0; //how many integers in the tree
+    censeTree(root, sum, count); //start the sum and count censusing process starting from the root
+    cout << "\nTree average: " << 1.0*sum/count; //prints the average (multiplied by a floatified 1 so division doesn't truncate)
 }
 
 //the main loop
@@ -202,12 +206,12 @@ int main() {
             
         } else if (command == "REMOVE") { //remove a specified int in the tree
             
-        } else if (command == "SEARCH") { //remove and print root int
+        } else if (command == "SEARCH") { //find a given int in the tree
             
         } else if (command == "PRINT") { //print visualization of tree
-            
+            printNode(root);
         } else if (command == "AVERAGE") { //print average of all ints
-            
+            printAverage(root);
         } else if (command == "HELP") { //print all valid command words
             cout << "\nYour command words are:\nADD     - Manually insert a string of integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
