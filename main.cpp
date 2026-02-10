@@ -36,35 +36,20 @@ void AllCaps(string& word) {
     }
 }
 
-//recursively searches through the tree and returns the node whose data matches the given int, used by various functions
-Node* findInt(Node* current, int theint) {
-    if (current == NULL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NULL
-        return NULL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
-    } if (theint == current->getData()) { //if the current node's data matches the int, we return current because it's a match!
-        return current;
-    } //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
-    bool lr = theint < current->getData() ? 0 : 1; //BSTs are organized so that if the int is in the tree, it's guaranteed to be in that direction
-    return findInt(current->getNext(lr), theint); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
-}
-
-//recursively bubble sorts starting at the root of the heap until the end, goes down the paths with the bigger children
-void bubbleDown(int*& table, size_t i, size_t endi) {
-    /*size_t childi = getChild(i, 0); //left child, start assuming we're going with this one
-    size_t right = getChild(i, 1); //right child
-    if (childi >= endi) return; //if the left child is past the maximum i used, that means the node actually has no children, so we've reached the end and we stop here
-    if (right < endi && table[right] > table[childi]) { //if the right child is (existant and) bigger than the left, we use that one instead
-        childi = right;
+//recursively find where to put the int and then put it there, or increment the duplicate counter if it's a duplicate
+void addInt(Node*& current, int theint) {
+    if (current == NULL) { //if we've reached the leaf of the tree, we add the int here in a new node
+        current = new Node(theint); //works because getNext returns a reference
+        return; //return because NULL has no children and we don't need to check all that
     }
-    if (table[childi] > table[i]) { //if the child is bigger than the current item, we move it up, since bigger ints go above
-        swap(table[i], table[childi]); //move up through swappage, also makes the smaller parent go down
-        bubbleDown(table, childi, endi); //recursively continue with the int we just moved down into the child index
-    }*/
-}
-
-//adds an int to the end of table and begins the bubble sort process upwards
-void addInt(Node*& root, int theint) {
-    table[endi] = theint; //adds the int to the end
-    //bubbleUp(table, endi); //recursively bubble sorts the heap starting from the new int
+    int data = current->getData(); //get current's int so we don't get it twice
+    if (theint < data) { //if the int < current int, it goes somewhere to the left of the current node, so keep recursing to the left
+        addInt(current->getNext(0), theint);
+    } else if (theint > data) { //if the int > current int, it goes somewhere to the right of the current node, so keep recursing to the right
+        addInt(current->getNext(1), theint);
+    } else { //if the int == current int, it's a duplicate so we increment the int amount in the current node
+        current->increment();
+    }
 }
 
 //looks at a given input, and adds all valid ints in it into the table
@@ -119,7 +104,7 @@ void readInts(Node*& root) {
 }
 
 //removes the root of the heap, and adjusts the heap accordingly
-void removeRoot(int*& table, size_t& endi, bool printText = true) {
+/*void removeRoot(int*& table, size_t& endi, bool printText = true) {
     if (endi == 1) { //we can't remove the root if there's no root (no available items in table)
         cout << "\nThere are no integers to remove. (Type HELP for help)";
         return;
@@ -130,6 +115,32 @@ void removeRoot(int*& table, size_t& endi, bool printText = true) {
     cout << " " << table[1]; //prints (formatting space and) the value of the root we just got rid of
     table[1] = table[--endi]; //moves the last item in the heap to the root, and also decrements the end index since there's one less int now
     bubbleDown(table, 1, endi);//recursively bubble sorts the heap starting from the root to make sure the values are still sorted correctly; we just put a small int above the big ones, after all.
+}*/
+
+//recursively searches through the tree and returns the node whose data matches the given int, used by search
+Node* findInt(Node* current, int theint) {
+    if (current == NULL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NULL
+        return NULL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
+    } if (theint == current->getData()) { //if the current node's data matches the int, we return current because it's a match!
+        return current;
+    } //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
+    bool lr = theint < current->getData() ? 0 : 1; //BSTs are organized so that if the int is in the tree, it's guaranteed to be in that direction
+    return findInt(current->getNext(lr), theint); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
+}
+
+void search(Node* root) {
+    if (root == NULL) {
+        cout << "\nTree is empty, no integers to find. (Type HELP for help)";
+    }
+    cout << "\nWhat integer do you want to find?\n> ";
+    int theint;
+    while (cin >> theint)) {
+        if (current < 1 || current > 999) { //if it's out of range, we increment the ugly counter and continue to the next loop so we don't label it as another good
+                ugly++;
+                continue;
+            }
+        cout << "\n"
+    }
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
@@ -152,6 +163,9 @@ void printNode(Node* current, const string prefix = "", bool right = false, bool
         printNode(child, childPrefix, true);
     } //prints the current node after everything to the left of it (printing in this order makes it so the tree gets automatically spaced and formatted!)
     cout << '\n' << prefix << curve << current->getData(); //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
+    if (current->getAmount() > 1) { //if there's more than just one of that int, we also print how much of that int there is
+        cout << " x " << current->getAmount();
+    }
     child = current->getNext(0); //get the left child now
     if (child != NULL) { //if the left child exists, print it!
         string childPrefix = prefix; //same general process as the right child
@@ -201,9 +215,9 @@ int main() {
 
         //calls function corresponding to the given command word
         if (command == "ADD") { //add integer(s)
-            
+            typeInts(root);
         } else if (command == "READ") { //read in integers from file
-            
+            readInts(root);
         } else if (command == "REMOVE") { //remove a specified int in the tree
             
         } else if (command == "SEARCH") { //find a given int in the tree
