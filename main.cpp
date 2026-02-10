@@ -123,19 +123,61 @@ void readInts(Node*& root) {
     parseInts(stin, root);
 }
 
-//removes the root of the heap, and adjusts the heap accordingly
-/*void removeRoot(int*& table, size_t& endi, bool printText = true) {
-    if (endi == 1) { //we can't remove the root if there's no root (no available items in table)
-        cout << "\nThere are no integers to remove. (Type HELP for help)";
+//gets the inorder successor to the given node (the node with smallest number greater than current's)
+Node*& getSuccessor(Node* current) { //start finding the successor one to the right, since all numbers to the right are greater than current's
+    Node** successor = &current->getNext(1); //store successor as Node** instead of Node*& so we don't modify the tree while going to the left
+    while ((*successor)->getNext(0) != NULL) { //go to the left until we can't, since going to the left gives a smaller number, and we want the smallest number from here
+        successor = &(*successor)->getNext(0); //since successor is a Node**, we have do de-node it, go to the left, then pointerize it again
+    }
+    return *successor; //return the current successor because we've left the for loop meaning we've reached the leftmost and smallest number on the right branch of the passed node
+}
+
+//recursively finde the int to delete in the tree, and then delete it and reorganize the tree. The whole process works because Node.getNext returns a reference, and that also makes it so we don't need any special condition for removing the root
+void removeNode(Node*& current, int theint) {
+    if (current == NULL) { //if we ran out of nodes, that means the int isn't in the tree, so we say error and return
+        cout << "\n" << theint << " is not in the tree; can't remove anything.";
+        return;
+    } //recurse to the left or right branch, depending on if it's < or > the current data, since that's how BSTs work
+    if (theint < current->getData()) {
+        removeNode(current->getNext(0), theint);
+        return; //return because we don't have anything to do on this layer
+    } else if (theint > current->getData()) {
+        removeNode(current->getNext(1), theint);
         return;
     }
-    if (printText) { //only print this if called directly from main, not if called by removeAll, cause that would look bad
-        cout << "\nRemoving root integer:";
-    }
-    cout << " " << table[1]; //prints (formatting space and) the value of the root we just got rid of
-    table[1] = table[--endi]; //moves the last item in the heap to the root, and also decrements the end index since there's one less int now
-    bubbleDown(table, 1, endi);//recursively bubble sorts the heap starting from the root to make sure the values are still sorted correctly; we just put a small int above the big ones, after all.
-}*/
+    current->decrement(); //decrease amount of the int stored
+    if (current->getAmount()) { //if there's still some of the int left in the node, we say how much are left
+        cout << "\nRemoved one " << theint << " from tree; " << current->getAmount() << " of this integer left.";
+        return; //return since we can't delete anything yet
+    } //store the current node as old so we can replace it but still manage it later
+    Node* old = current;
+    if (!current->getNext(0)) { //if the left child is null, pull the right child into the current node of the tree. This presevres balance because both of current's children will also be greater than current's parent if current is a right child, and vice versa, which is what BSTs are supposed to do
+        current = current->getNext(1); //the right child might also be null, but that's fine cause if it has no children, we need to just nullify it anyway                                                    ^
+        delete old; //delete the old node because that's what we're here for                                                                                                                                   |
+    } else if (!current->getNext(1)) { //if the left child is not null, but the right child is, pull the left into its parent's slot. This also preserves balance for the vice versa reason of this comment ___|
+        current = current->getNext(0); //left child will never be null here
+        delete old; //still delete the old node because we replaced it
+    } else { //if both children are not null, so current has two children
+        Node*& nextOld = getSuccessor(current); //get the successor of the current node (the largest node smaller than it; guaranteed to preserve BST balance since it's smaller than everything else in the right, but still bigger than everything to the left), and also its old position before we move it move it
+        Node* next = nextOld; //get the old value of next before we overwrite its old position
+        nextOld = next->getNext(1); //put the right child onto where next was, so we don't abandon any children that might've been there (successor is guaranteed to have no left children, since it was found by going all the way to the left). This might be null, but if that's the case we need to nullify nextOld anyway so that works out pretty well
+        current = next; //move the successor to the old current's position in the tree
+        current->setNext(old->getNext(0), 0); //sets the new current's children to the old current's children, to preserve continuity
+        current->setNext(old->getNext(1), 1);
+        delete old; //delete the old node because that's the reason we called this function in the first place
+    } //success text! also confirms what we just deleted, and that there weren't any duplicates
+    cout << "\nSuccessfully removed " << theint << " from the tree!";
+}
+
+//gets an integer to remove from the tree and starts the integer removal process
+void removeInt(Node*& root) {
+    if (root == NULL) { //error text and return if there's no tree to remove from yet
+        cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
+        return;
+    } //prompt
+    cout << "\nWhich integer do you want to remove?\n> ";
+    removeNode(root, makeInt()); //gets an int from the user and starts the int removal process for that int
+}
 
 //recursively delete all the nodes, branch off from current and delete all descendants then delete the current node
 void deleteAll(Node* current) {
@@ -145,23 +187,22 @@ void deleteAll(Node* current) {
     delete current; //now that all the descendants are deleted, delete the current node
 }
 
-//recursively searches through the tree and returns the node whose data matches the given int, and also builds a string showing the path to it, used by search
+//recursively searches through the tree and returns the node whose data matches the given int, and also builds a string with a visual representation of the path to it, used by search
 Node* findPath(Node* current, int theint, string& path, string prefix, bool right = false, bool root = false) {
     if (current == NULL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NULL
         return NULL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
     }
-    bool found = false;
-    if (theint == current->getData()) { //if the current node's data matches the int, we return current because it's a match!
+    bool found = false; //if the current node has the int we're looking for
+    if (theint == current->getData()) { //if the current node's data matches the int, we truify found because it's a match!
         found = true;
     }
     string curve; //the curvy line that connects the vertical line or parent to the number, defaults to "" for the root
     if (!root) { //make the curve face the parent depending on which side the parent is on
         curve = right ? ",-- " : "'-- ";
-    }
-    //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
+    } //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
     bool lr = theint < current->getData() ? 0 : 1; //BSTs are organized so that if the int is in the tree, it's guaranteed to be in that direction
-    string childPrefix = prefix;
-    if (!root && lr) {
+    string childPrefix = prefix; //the prefix that the child will have, prefix plus an extra chunk
+    if (!root && lr) { //add onto the prefix in this way if we need to go to the right
         childPrefix += (!right ? "|   " : "    ");
     }
     path += string("\n") + prefix + curve + to_string(current->getData());
@@ -172,28 +213,28 @@ Node* findPath(Node* current, int theint, string& path, string prefix, bool righ
     if (!root && !lr) {
         childPrefix += (right ? "|   " : "    ");
     }
-    return findInt(current->getNext(lr), theint, path, childPrefix, lr); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
+    return findPath(current->getNext(lr), theint, path, childPrefix, lr); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
 }
 
-//
-void search(Node* root) {
-    if (root == NULL) {
+//confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
+void searchInt(Node* root) {
+    if (root == NULL) { //can't search for an int if there's nothing there so error and return
         cout << "\nTree is empty, no integers to find. (Type HELP for help)";
         return;
-    }
+    } //prompt
     cout << "\nWhat integer do you want to find?\n> ";
-    int theint = makeInt();
-    string pathVisual;
-    Node* thenode = findPath(root, theint, pathVisual, "", false, true);
-    if (thenode == NULL) {
+    int theint = makeInt(); //gets the int the user wants to find
+    string pathVisual; //the visual of the path to the int that we build into
+    Node* thenode = findPath(root, theint, pathVisual, "", false, true); //find the node the int is in and build the path visual
+    if (thenode == NULL) { //give error and return if we didn't find a node with the given int in the tree
         cout << "\n" << theint << " is not in the tree.";
         return;
-    }
+    }//confirm that the integer is indeed in the tree
     cout << "\n" << theint << " is indeed in the tree";
-    if (thenode->getAmount() > 1) {
+    if (thenode->getAmount() > 1) { //indicate how many of the int is in the tree if it isn't just one
         cout << ", " << thenode->getAmount() << " times";
     }
-    cout << "." << pathVisual;
+    cout << "." << pathVisual; //punctuate the last sentance and also print the visual of the path we found
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
@@ -272,9 +313,9 @@ int main() {
         } else if (command == "READ") { //read in integers from file
             readInts(root);
         } else if (command == "REMOVE") { //remove a specified int in the tree
-            
+            removeInt(root);
         } else if (command == "SEARCH") { //find a given int in the tree
-            search(root);
+            searchInt(root);
         } else if (command == "PRINT") { //print visualization of tree
             printNode(root);
         } else if (command == "AVERAGE") { //print average of all ints
@@ -294,4 +335,5 @@ int main() {
     //recursively delete all the nodes for good practice, starting from the root
     deleteAll(root);
 }
+
 
