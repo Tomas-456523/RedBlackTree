@@ -158,7 +158,7 @@ void removeNode(Node*& current, int theint) {
         current = current->getNext(0); //left child will never be null here
         delete old; //still delete the old node because we replaced it
     } else { //if both children are not null, so current has two children
-        Node*& nextOld = getSuccessor(current); //get the successor of the current node (the largest node smaller than it; guaranteed to preserve BST balance since it's smaller than everything else in the right, but still bigger than everything to the left), and also its old position before we move it move it
+        Node*& nextOld = getSuccessor(current); //get the successor of the current node (the smallest node larger than it; guaranteed to preserve BST balance since it's smaller than everything else in the right, but still bigger than everything to the left), and also its old position before we move it move it
         Node* next = nextOld; //get the old value of next before we overwrite its old position
         nextOld = next->getNext(1); //put the right child onto where next was, so we don't abandon any children that might've been there (successor is guaranteed to have no left children, since it was found by going all the way to the left). This might be null, but if that's the case we need to nullify nextOld anyway so that works out pretty well
         current = next; //move the successor to the old current's position in the tree
@@ -277,8 +277,9 @@ void printNode(Node* current, const string prefix = "", bool right = false, bool
 //recursively get (census) the sum and amount of all the ints, used by the average function
 void censeTree(Node* current, long long& sum, int& population) { //the correct verb is census but that's also the noun and it sounded weird to me so I used the incorrect word cense instead
     if (current == NULL) return; //stop once we run out of nodes
-    population++; //increment in count cause we're checking an int
-    sum += current->getData(); //add the current node's int to the total
+    size_t amount = current->getAmount(); //get how many of this int are in the node
+    population += amount; //add the amount to the total amount of ints
+    sum += current->getData() * amount; //add the current node's int(s) to the total
     censeTree(current->getNext(0), sum, population); //continue checking through the left branch
     censeTree(current->getNext(1), sum, population); //continue through the right branch
 }
@@ -298,9 +299,7 @@ void printAverage(Node* root) {
 //the main loop
 int main() {
     Node* root = NULL; //the root node of the binary tree, empty until something is added
-    for (int i = 1; i < 22/2; i++) {
-        cout << i << " " << 22-i << " ";
-    }
+
     //welcome message with instructions, also sets precision to 3 decimal points for the average function
     cout << "\nHowdy pardner. Name's Bingo Seane Trevor the Binary Search Tree.\nI'm the best integer wrangler in the west, for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
