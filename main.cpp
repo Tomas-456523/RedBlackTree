@@ -42,15 +42,15 @@ void AllCaps(string& word) {
 }
 
 //gets a singular int from the user, used to know which int to search for or remove in those functions
-int makeNum() {
+int makeInt() {
     int num = 0; //the int we input into and check
     while (true) { //loops forever
         cout << "\n> ";
         if (cin >> num) { //gets the input and returns it if it was a valid integer
             CinIgnoreAll(true); //removes the newline character after valid integer input
             return num;
-        } else { //otherwise give generic error message and try again
-            cout << "\nPlease enter one integer.";
+        } else { //otherwise give error message and try again
+            cout << "\nI only wrangle integers. Please enter an integer.";
         }
         CinIgnoreAll(); //removes the newline character or invalid input
     }
@@ -80,7 +80,7 @@ void parseInts(istream& stin, Node*& root) { //stin = string + in, like cin = ch
             if (current < 1 || current > 999) { //if it's out of range, we increment the ugly counter and continue to the next loop so we don't label it as another good
                 ugly++;
                 continue;
-            } //adds the int to the table and updates the heap accordingly
+            } //adds the int to the table and updates the tree accordingly
             addInt(root, current);
             good++; //increment the good counter because this was good input
         } else if (stin.eof()) { //if stin gave faulty input because it reached the end
@@ -175,7 +175,7 @@ void removeInt(Node*& root) {
         cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
         return;
     } //prompt
-    cout << "\nWhich integer do you want to remove?\n> ";
+    cout << "\nWhich integer do you want to remove?";
     removeNode(root, makeInt()); //gets an int from the user and starts the int removal process for that int
 }
 
@@ -188,7 +188,7 @@ void deleteAll(Node* current) {
 }
 
 //recursively searches through the tree and returns the node whose data matches the given int, and also builds a string with a visual representation of the path to it, used by search
-Node* findPath(Node* current, int theint, string& path, string prefix, bool right = false, bool root = false) {
+Node* findPath(Node* current, int theint, string& path, const string& prefix, bool right = false, bool root = false) {
     if (current == NULL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NULL
         return NULL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
     }
@@ -202,27 +202,31 @@ Node* findPath(Node* current, int theint, string& path, string prefix, bool righ
     } //find direction to continue checking in, left if the int is less than the current data, and right if it's greater
     bool lr = theint < current->getData() ? 0 : 1; //BSTs are organized so that if the int is in the tree, it's guaranteed to be in that direction
     string childPrefix = prefix; //the prefix that the child will have, prefix plus an extra chunk
-    if (!root && lr) { //add onto the prefix in this way if we need to go to the right
-        childPrefix += (!right ? "|   " : "    ");
+    if (!root) { //root is the very top, so no lines above that, so if it's the root we don't add anything for the children yet
+        childPrefix += (lr == right ? "    " : "|   "); //an extra line goes above only if the directions are different (because the child goes under the grandparent's line which connects it to the parent)
     }
-    path += string("\n") + prefix + curve + to_string(current->getData());
-    if (found) {
-        path += "<-----";
-        return current;
+    Node* foundNode = NULL; //if we haven't found the int yet, make the children keep looking for it and put the result in here
+    if (!found && lr) { //if we havent't found anything yet and we need to check to the right
+        foundNode = findPath(current->getNext(lr), theint, path, childPrefix, lr); //try to find the node to the right, and continue building the path string with the child prefix
     }
-    if (!root && !lr) {
-        childPrefix += (right ? "|   " : "    ");
+    path += "\n" + prefix + curve + to_string(current->getData()); //add the current node to the path using the prefix passed down from its ancestors, and the curve
+    if (found) { //if this was the node we were trying to find, we also add a marker arrow after the node
+        path += "  <----- HERE IT IS!"; //makes it very obvious, also the marker looks nice actually
+        return current; //return the node because that's what we were trying to find!
     }
-    return findPath(current->getNext(lr), theint, path, childPrefix, lr); //continue finding the int in that direction, and return to the pervious call of findInt whatever we find in that direction
+    if (!lr) { //keep checking to the left if that's where the int might be, and continue building the path string with the child prefix
+        foundNode = findPath(current->getNext(lr), theint, path, childPrefix, lr);
+    }
+    return foundNode; //return whatever the left or right child found, passing it all the way back to the first calling of findPath. What an inspirational story
 }
 
 //confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
 void searchInt(Node* root) {
     if (root == NULL) { //can't search for an int if there's nothing there so error and return
-        cout << "\nTree is empty, no integers to find. (Type HELP for help)";
+        cout << "\nTree is empty, no integers to search for. (Type HELP for help)";
         return;
     } //prompt
-    cout << "\nWhat integer do you want to find?\n> ";
+    cout << "\nWhat integer do you want to search for?";
     int theint = makeInt(); //gets the int the user wants to find
     string pathVisual; //the visual of the path to the int that we build into
     Node* thenode = findPath(root, theint, pathVisual, "", false, true); //find the node the int is in and build the path visual
@@ -234,7 +238,7 @@ void searchInt(Node* root) {
     if (thenode->getAmount() > 1) { //indicate how many of the int is in the tree if it isn't just one
         cout << ", " << thenode->getAmount() << " times";
     }
-    cout << "." << pathVisual; //punctuate the last sentance and also print the visual of the path we found
+    cout << ".\nPath:" << pathVisual; //punctuate the last sentence and also print the visual of the path we found
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
@@ -294,7 +298,9 @@ void printAverage(Node* root) {
 //the main loop
 int main() {
     Node* root = NULL; //the root node of the binary tree, empty until something is added
-
+    for (int i = 1; i < 22/2; i++) {
+        cout << i << " " << 22-i << " ";
+    }
     //welcome message with instructions, also sets precision to 3 decimal points for the average function
     cout << "\nHowdy pardner. Name's Bingo Seane Trevor the Binary Search Tree.\nI'm the best integer wrangler in the west, for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
@@ -317,7 +323,7 @@ int main() {
         } else if (command == "SEARCH") { //find a given int in the tree
             searchInt(root);
         } else if (command == "PRINT") { //print visualization of tree
-            printNode(root);
+            printNode(root, "", false, true);
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(root);
         } else if (command == "HELP") { //print all valid command words
@@ -335,5 +341,3 @@ int main() {
     //recursively delete all the nodes for good practice, starting from the root
     deleteAll(root);
 }
-
-

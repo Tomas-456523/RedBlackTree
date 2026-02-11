@@ -20,7 +20,7 @@ void Node::decrement() { //decrements the count
 int Node::getData() { //get the int associated with this node
     return data;
 }
-size_t getAmount() { //get how many of the int this node has
+size_t Node::getAmount() { //get how many of the int this node has
     return amount;
 }
 Node*& Node::getNext(bool rside) { //get a reference to the left or right child node
