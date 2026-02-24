@@ -1,6 +1,6 @@
 /* Tomas Carranza Echaniz
-*  2/10/26
-*  This program is a binary search tree that stores integers from 1 to 999. The user can ADD strings of integers manually, or
+*  2/24/26
+*  This program is a red black search tree that stores integers from 1 to 999. The user can ADD strings of integers manually, or
 *  READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored in the same node. The user
 *  can REMOVE a specified integer from the tree, which will decrement its amount, and fully remove it if the amount reaches 0.
 *  The user can SEARCH to find if an integer is in the tree, and also optionally print where it is, and also PRINT the whole
@@ -301,7 +301,7 @@ int main() {
     Node* root = NULL; //the root node of the binary tree, empty until something is added
 
     //welcome message with instructions, also sets precision to 3 decimal points for the average function
-    cout << "\nHowdy pardner. Name's Bingo Seane Trevor the Binary Search Tree.\nI'm the best integer wrangler in the west, for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
+    cout << "\nI've been expecting you. I am Rubert the Red-Black Tree, and I maintain the balance for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
     string command; //the command that the user inputs into
     //continues until continuing is falsified (by typing QUIT)
@@ -334,8 +334,8 @@ int main() {
         }
     }
 
-    //says bye
-    cout << "\nSo long.\n";
+    //says a friendly farewell, wishing you a nice day
+    cout << "\nEnjoy your next 24 hours.\n";
 
     //recursively delete all the nodes for good practice, starting from the root
     deleteAll(root);
