@@ -1,10 +1,16 @@
 /* Tomas Carranza Echaniz
 *  2/24/26
-*  This program is a red black search tree that stores integers from 1 to 999. The user can ADD strings of integers manually, or
+*  This program is a red black tree that stores integers from 1 to 999. The user can ADD strings of integers manually, or
 *  READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored in the same node. The user
 *  can REMOVE a specified integer from the tree, which will decrement its amount, and fully remove it if the amount reaches 0.
 *  The user can SEARCH to find if an integer is in the tree, and also optionally print where it is, and also PRINT the whole
 *  tree normally. They can also print the AVERAGE of all the ints in the tree.
+*  
+*  RED-BLACK TREE RULES:
+*  1. The root is black
+*  2. All leaves are black
+*  3. Red nodes have only black children
+*  4. Counting the black nodes starting from any node and going to any of its descendants should return the same amount
 */
 
 #include <iostream>
@@ -50,16 +56,45 @@ int makeInt() {
             CinIgnoreAll(true); //removes the newline character after valid integer input
             return num;
         } else { //otherwise give error message and try again
-            cout << "\nI only wrangle integers. Please enter an integer.";
+            cout << "\nThis is not an integer.";
         }
         CinIgnoreAll(); //removes the newline character or invalid input
     }
+}
+
+void rotateLeft(Node*& node) {
+    //make the right child of node the parent of node
+    //the old parent's right child is set to the old right child's left child
+}
+
+void rotateRight(Node*& node) {
+    //make the left child of node the parent of node
+    //the old parent's left child is set to the old left child's right child
+}
+
+void balance(Node*& recent) {
+
 }
 
 //recursively find where to put the int and then put it there, or increment the duplicate counter if it's a duplicate
 void addInt(Node*& current, int theint) {
     if (current == NULL) { //if we've reached the leaf of the tree, we add the int here in a new node
         current = new Node(theint); //works because getNext returns a reference
+
+        //assign the parent
+
+        //while the parent of current is red:
+            //get the parent and grandparent
+            //if the parent is a left child:
+                //if the grandparent's right child is red, make the grandparent red, and both the grandparent's children black. After that, set current to the grandparent
+                //else if current is the right child, set current to the parent and rotate current to the left
+                //else, set the parent to black and the grandparent to red, then rotate the grandparent to the right
+            //else,
+                //if the color of the left child of the grandparent is red, set both of grandparent's children to black and make the grandparent red and set current to the grandparent
+                //else if current is a left child, set current to the parent and then rotate current to the right
+                //else, set the parent to black and the grandparent to red, then rotate the grandparent left
+        //after all that make sure the root is black
+
         return; //return because NULL has no children and we don't need to check all that
     }
     int data = current->getData(); //get current's int so we don't get it twice
@@ -96,8 +131,8 @@ void parseInts(istream& stin, Node*& root) { //stin = string + in, like cin = ch
     if (bad) {
         cout << '\n' << bad << " faulty item" << (bad != 1 ? "s" : "") << " in input; must be integers.";
     } //if we had out of range inputs, tell the user how many + instructions for the future
-    if (ugly) {                                                                        //Bingo Seane Trevor no know how to wrangle ints outside 1-999 :(
-        cout << '\n' << ugly << " integer" << (ugly != 1 ? "s" : "") << " found outside area of expertise; must be 1-999.";
+    if (ugly) {
+        cout << '\n' << ugly << " integer" << (ugly != 1 ? "s" : "") << " beyond bounds; must be 1-999.";
     }
 }
 
@@ -236,9 +271,9 @@ void searchInt(Node* root) {
     }//confirm that the integer is indeed in the tree
     cout << "\n" << theint << " is indeed in the tree";
     if (thenode->getAmount() > 1) { //indicate how many of the int is in the tree if it isn't just one
-        cout << ", " << thenode->getAmount() << " times";
+        cout << ", " << thenode->getAmount() << " times and";
     }
-    cout << ".\nPath:" << pathVisual; //punctuate the last sentence and also print the visual of the path we found
+    cout << "in a " << (thenode->getRed() ? "red" : "black") << " node.\nPath:" << pathVisual; //finish the last sentence and also print the visual of the path we found
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
@@ -260,7 +295,7 @@ void printNode(Node* current, const string prefix = "", bool right = false, bool
         } //starts printing the left child with the new prefix
         printNode(child, childPrefix, true);
     } //prints the current node after everything to the left of it (printing in this order makes it so the tree gets automatically spaced and formatted!)
-    cout << '\n' << prefix << curve << current->getData(); //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
+    cout << '\n' << prefix << curve << current->getData() << " (" << (current->getRed() ? "Red" : "Black") << ")"; //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
     if (current->getAmount() > 1) { //if there's more than just one of that int, we also print how much of that int there is
         cout << " (" << current->getAmount() << ")";
     }
@@ -284,7 +319,7 @@ void censeTree(Node* current, long long& sum, int& population) { //the correct v
     censeTree(current->getNext(1), sum, population); //continue through the right branch
 }
 
-//prints the average of all the ints. This is actually pretty useful for testing
+//prints the average of all the ints.
 void printAverage(Node* root) {
     if (root == NULL) { //error text and return because there's no ints in the tree to get the average value of
         cout << "\nThere are no integers to average. (Type HELP for help)";
@@ -298,7 +333,7 @@ void printAverage(Node* root) {
 
 //the main loop
 int main() {
-    Node* root = NULL; //the root node of the binary tree, empty until something is added
+    Node* root = NULL; //the root node of the tree, empty until something is added
 
     //welcome message with instructions, also sets precision to 3 decimal points for the average function
     cout << "\nI've been expecting you. I am Rubert the Red-Black Tree, and I maintain the balance for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
@@ -318,7 +353,7 @@ int main() {
         } else if (command == "READ") { //read in integers from file
             readInts(root);
         } else if (command == "REMOVE") { //remove a specified int in the tree
-            removeInt(root);
+            cout << "\nThis command be unimplemented at the moment."; //removeInt(root);
         } else if (command == "SEARCH") { //find a given int in the tree
             searchInt(root);
         } else if (command == "PRINT") { //print visualization of tree
@@ -326,7 +361,7 @@ int main() {
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(root);
         } else if (command == "HELP") { //print all valid command words
-            cout << "\nYour command words are:\nADD     - Manually insert a string of integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
+            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Doesn't do anything right now.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable

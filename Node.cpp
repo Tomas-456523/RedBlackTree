@@ -6,10 +6,15 @@ Node::Node(int _data) { //create the node and assign it the given int
     data = _data;
     left = right = 0; //child nodes start as 0 which is equal to NULL except NULL requires #including stuff
     amount = 1; //since we just made it, it's gonna be just one of the int
+    red = true; //nodes are red by default
+    parent = 0; //the node has a NULL parent by default
 }
 void Node::setNext(Node* _next, bool rside) { //set the node that goes after this one and on which side
     Node*& next = rside ? right : left; //get if we're editing the left or right child; right if true, left if false, more intuitive this way since 0 is typically represented as being to the left of 1
     next = _next; //set the child node to the given one
+}
+void Node::setColor(bool _red) { //sets the node to the one that is passed
+    red = _red;
 }
 void Node::increment() { //increments the count
     amount++;
@@ -19,6 +24,9 @@ void Node::decrement() { //decrements the count
 }
 int Node::getData() { //get the int associated with this node
     return data;
+}
+bool Node::getRed() { //get if it's a red node
+    return red;
 }
 size_t Node::getAmount() { //get how many of the int this node has
     return amount;
