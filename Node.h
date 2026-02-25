@@ -11,7 +11,8 @@ public:
     ~Node(); //default destructor
 
     void setNext(Node* _next, bool rside); //sets the left or right child node which is gotten from getNext
-    void setColor(bool _red); //sets the node to the one that is passed
+    void setPrev(Node* _prev);
+    void setRed(bool _red); //sets the node's color based on the bool passed
     void increment(); //in or decrement the amount of the int stored, called by adding and deleting functions respectively
     void decrement();
 
@@ -20,6 +21,7 @@ public:
     size_t getAmount(); //get how many of the int this node has
 
     Node*& getNext(bool rside); //get the left or right node based on the bool value passed, return by reference so it's easier to set when adding numbers
+    Node*& getPrev(); //get the this node's parent
 private:
     Node* parent; //the parent of this node
     Node* left; //the child nodes that goes after this one in the tree, they default to NULL in the constructor

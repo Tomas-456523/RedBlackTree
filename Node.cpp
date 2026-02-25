@@ -13,7 +13,7 @@ void Node::setNext(Node* _next, bool rside) { //set the node that goes after thi
     Node*& next = rside ? right : left; //get if we're editing the left or right child; right if true, left if false, more intuitive this way since 0 is typically represented as being to the left of 1
     next = _next; //set the child node to the given one
 }
-void Node::setColor(bool _red) { //sets the node to the one that is passed
+void Node::setRed(bool _red) { //sets the node to red or black depending on if true or false, respectively, is passed
     red = _red;
 }
 void Node::increment() { //increments the count
@@ -33,6 +33,9 @@ size_t Node::getAmount() { //get how many of the int this node has
 }
 Node*& Node::getNext(bool rside) { //get a reference to the left or right child node
     return rside ? right : left; //return right child if true was passed, left if false
+}
+Node*& Node::getPrev() { //get the this node's parent
+    return parent;
 }
 Node::~Node() { //default destructor, does nothing
 
