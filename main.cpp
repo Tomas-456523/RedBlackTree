@@ -1,10 +1,11 @@
 /* Tomas Carranza Echaniz
-*  2/24/26
-*  This program is a red black tree that stores integers from 1 to 999. The user can ADD strings of integers manually, or
-*  READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored in the same node. The user
-*  can REMOVE a specified integer from the tree, which will decrement its amount, and fully remove it if the amount reaches 0.
-*  The user can SEARCH to find if an integer is in the tree, and also optionally print where it is, and also PRINT the whole
-*  tree normally. They can also print the AVERAGE of all the ints in the tree.
+*  2/25/26
+*  This program is a red-black tree that stores integers from 1 to 999. It is a binary search tree that balances itself
+*  every time an item is added or removed, according to the official red-black tree rules. The user can ADD strings of
+*  integers manually,or READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored
+*  in the same node. The user cannot REMOVE a specified integer from the tree, because this feature has not been
+*  implemented yet as of RB Tree Part 1. The user can SEARCH to find if an integer is in the tree, and also PRINT the
+*  whole tree. They can also print the AVERAGE of all the ints in the tree.
 *  
 *  RED-BLACK TREE RULES:
 *  1. The root is black
@@ -63,16 +64,16 @@ int makeInt() {
     }
 }
 
-//looks at a given input, and adds all valid ints in it into the table
-void parseInts(istream& stin, Node*& root) { //stin = string + in, like cin = char + in, but sin is something else so I didn't go with that
+//looks at a given input, and adds all valid ints in it into the tree
+void parseInts(istream& stin, RBTree& tree) { //stin = string + in, like cin = char + in, but sin is something else so I didn't go with that
     int good = 0, bad = 0, ugly = 0; //counts the good, the bad (non-int), and the ugly (out of range) inputs
     for (int current;;) { //creates a current int to read into from stin, and loops until the end of the input
         if (stin >> current) { //gets the next chunk of data, skipping whitespace, and at the same time checks if it was valid input!
             if (current < 1 || current > 999) { //if it's out of range, we increment the ugly counter and continue to the next loop so we don't label it as another good
                 ugly++;
                 continue;
-            } //adds the int to the table and updates the tree accordingly
-            addInt(root, current);
+            } //inserts the int into the tree
+            tree.insert(current);
             good++; //increment the good counter because this was good input
         } else if (stin.eof()) { //if stin gave faulty input because it reached the end
             break; //leave the loop
@@ -93,16 +94,16 @@ void parseInts(istream& stin, Node*& root) { //stin = string + in, like cin = ch
 }
 
 //user types a string of integers, and we try to add those to the tree
-void typeInts(Node*& root) {
+void typeInts(RBTree& tree) {
     string ints; //string we input into
     cout << "\nEnter your integer(s).\n> ";
     getline(cin, ints); //get the input from the user
     stringstream stin(ints); //create a new stringstream so we can treat the ints string like cin in parseInts
-    parseInts(stin, root); //interprets the string as various ints, and adds them to the tree
+    parseInts(stin, tree); //interprets the string as various ints, and adds them to the tree
 }
 
 //user chooses a file, which the program then reads ints from and adds those to the tree
-void readInts(Node*& root) {
+void readInts(RBTree& tree) {
     cout << "\nWhich file do you want to read from?\n> ";
     string file; //the file name
     getline(cin, file); //the user says which file to read from
@@ -111,12 +112,49 @@ void readInts(Node*& root) {
         cout << "\nNo file named \"" << file << "\" found.";
         return;
     } //interprets the file text as various ints, and adds them to the tree
-    parseInts(stin, root);
+    parseInts(stin, tree);
+}
+
+//gets an integer to remove from the tree and starts the integer removal process
+void RBTree::removeInt(Node*& root) {
+    /*if (root == NIL) { //error text and return if there's no tree to remove from yet
+        cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
+        return;
+    } //prompt
+    cout << "\nWhich integer do you want to remove?";
+    removeNode(root, makeInt()); //gets an int from the user and starts the int removal process for that int*/
+}
+
+//confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
+void searchInt(RBTree& tree) {
+    cout << "\nWhat integer do you want to search for?"; //prompt
+    int theint = makeInt(); //gets the int the user wants to find
+    string path; //the path visual string which we build into
+    Node* thenode = tree.getNode(theint, path); //finds the node with the int and builds the visual of the path to the int
+    if (thenode == NULL) { //if buildPath returns an empty string that means the tree does not contain the int
+        cout << "\n" << theint << " is not in the tree."; //so we say that and return
+        return;
+    } //confirm that the integer is indeed in the tree
+    cout << "\n" << theint << " is indeed in the tree";
+    if (thenode->getAmount() > 1) { //indicate how many of the int is in the tree if it isn't just one
+        cout << ", " << thenode->getAmount() << " times and";
+    }
+    cout << "in a " << (thenode->getRed() ? "red" : "black") << " node.\nPath:" << path; //finish the last sentence and also print the visual of the path we found
+}
+
+//finds the average of all the values in the tree and prints that
+void printAverage(RBTree& tree) {
+    long double avg = tree.getAverage(); //asks the tree what its average is
+    if (isnan(avg)) { //error text and return because there's no ints in the tree to get the average value of
+        cout << "\nThere are no integers to average. (Type HELP for help)";
+        return;
+    } //prints the average!
+    cout << "\nTree average: " << avg;
 }
 
 //the main loop
 int main() {
-    Node* root = NULL; //the root node of the tree, empty until something is added
+    RBTree tree = RBTree(); //the red-black tree, starts with a NIL root until something is added
 
     //welcome message with instructions, also sets precision to 3 decimal points for the average function
     cout << "\nI've been expecting you. I am Rubert the Red-Black Tree, and I maintain the balance for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
@@ -132,19 +170,19 @@ int main() {
 
         //calls function corresponding to the given command word
         if (command == "ADD") { //add integer(s)
-            typeInts(root);
+            typeInts(tree);
         } else if (command == "READ") { //read in integers from file
-            readInts(root);
+            readInts(tree);
         } else if (command == "REMOVE") { //remove a specified int in the tree
-            cout << "\nThis command be unimplemented at the moment."; //removeInt(root);
+            cout << "\nThis command be unimplemented at the moment."; //removeInt(tree);
         } else if (command == "SEARCH") { //find a given int in the tree
-            searchInt(root);
+            searchInt(tree);
         } else if (command == "PRINT") { //print visualization of tree
-            printNode(root, "", false, true);
+            cout << tree; //I overloaded the << operator so we can just straight up print the tree
         } else if (command == "AVERAGE") { //print average of all ints
-            printAverage(root);
+            printAverage(tree);
         } else if (command == "HELP") { //print all valid command words
-            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Doesn't do anything right now.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
+            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - This command is currently under construction.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable
@@ -155,6 +193,5 @@ int main() {
     //says a friendly farewell, wishing you a nice day
     cout << "\nEnjoy your next 24 hours.\n";
 
-    //recursively delete all the nodes for good practice, starting from the root
-    deleteAll(root);
+    //tree goes out of scope and gets deleted here
 }
