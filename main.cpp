@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <string>
 #include <limits>
+#include <cmath>
 #include "Node.h"
 #include "RBTree.h"
 using namespace std;
@@ -116,7 +117,7 @@ void readInts(RBTree& tree) {
 }
 
 //gets an integer to remove from the tree and starts the integer removal process
-void RBTree::removeInt(Node*& root) {
+void removeInt(Node*& root) {
     /*if (root == NIL) { //error text and return if there's no tree to remove from yet
         cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
         return;
@@ -182,7 +183,7 @@ int main() {
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(tree);
         } else if (command == "HELP") { //print all valid command words
-            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - This command is currently under construction.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
+            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - THIS COMMAND IS CURRENTLY UNDER CONSTRUCTION.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable

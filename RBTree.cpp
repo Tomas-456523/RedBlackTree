@@ -1,5 +1,6 @@
 //implementation file for the red-black tree data structure
 
+#include <iostream>
 #include <limits>
 #include <string>
 #include "RBTree.h"
@@ -29,7 +30,7 @@ RBTree::~RBTree() {
 }
 
 //returns a fresh link to the given Node* that makes sure it specifically references the parent's pointer to it. The root doesn't get affected since it has no parent
-Node*& relink(Node* node) {
+Node*& RBTree::relink(Node* node) {
     if (node->getPrev() == NIL) return root; //if it has no parents, then it's the root so we just return that
     Node*& parent = node->getPrev(); //finds the parent of the given node
     if (node == parent->getNext(0)) return parent->getNext(0); //if the node is a left child, return the parent's reference to the left child
@@ -45,7 +46,7 @@ void RBTree::rotateNode(Node* _node, bool right) { //"right" represents if it's 
     lchild->setNext(node, right); //set lchild's right child to node
     node->setNext(lrchild, !right); //set node's left child to lchild's right child
     
-    if (lrchild) lrchild->setPrev(node); //if lrchild isn't NIL we tell it it has been adopted by node
+    if (lrchild != NIL) lrchild->setPrev(node); //if lrchild isn't NIL we tell it it has been adopted by node
     lchild->setPrev(node->getPrev()); //set lchild's parent to node's old parent because it's in node's place now
     node->setPrev(lchild); //lchild is now node's parent so we set that
 
@@ -53,7 +54,7 @@ void RBTree::rotateNode(Node* _node, bool right) { //"right" represents if it's 
 }
 
 //balances the tree after having inserted a node
-void RBTree::balanceInsertion(Node*& current) {
+void RBTree::balanceInsertion(Node* current) {
     while (current->getPrev()->getRed()) { //do the balancing process while the current node's parent is red
         Node* parent = current->getPrev(); //get references to the parent and grandparent of the current node
         Node* gparent = parent->getPrev();
@@ -80,7 +81,7 @@ void RBTree::balanceInsertion(Node*& current) {
 }
 
 //future function I'm sure will be very fun to implement
-void RBTree::balanceDeletion(Node*& recent) {
+void RBTree::balanceDeletion(Node* recent) {
     //so spooky
 }
 
@@ -107,6 +108,7 @@ Node* RBTree::initNode(int data, Node* parent) { //the parent is NIL if nothing 
     newnode->setNext(NIL, 0); //change the new node's child pointers from NULL to NIL
     newnode->setNext(NIL, 1);
     newnode->setPrev(parent); //set the parent to whatever was passed, which might also be NIL
+    return newnode; //return the new node!
 }
 
 //basically just starts the node adding process
@@ -125,7 +127,7 @@ Node*& RBTree::getSuccessor(Node* current) { //start finding the successor one t
 
 //recursively finde the int to delete in the tree, and then delete it and reorganize the tree. The whole process works because Node.getNext returns a reference, and that also makes it so we don't need any special condition for removing the root
 void RBTree::removeNode(Node*& current, int theint) {
-    if (current == NIL) { //if we ran out of nodes, that means the int isn't in the tree, so we say error and return
+    /*if (current == NIL) { //if we ran out of nodes, that means the int isn't in the tree, so we say error and return
         cout << "\n" << theint << " is not in the tree; can't remove anything.";
         return;
     } //recurse to the left or right branch, depending on if it's < or > the current data, since that's how BSTs work
@@ -157,7 +159,7 @@ void RBTree::removeNode(Node*& current, int theint) {
         current->setNext(old->getNext(1), 1);
         delete old; //delete the old node because that's the reason we called this function in the first place
     } //success text! also confirms what we just deleted, and that there weren't any duplicates
-    cout << "\nSuccessfully removed " << theint << " from the tree!";
+    cout << "\nSuccessfully removed " << theint << " from the tree!";*/
 }
 
 //used by main to tell the tree to remove this int; starts the int removal process
@@ -166,7 +168,7 @@ void RBTree::remove(int theint) { //must be its own seperate function instead of
 }
 
 //recursively searches through the tree and returns the node whose data matches the given int, and also builds a string with a visual representation of the path to it, used by search
-Node* RBTree::findPath(Node* current, int theint, string& path, const string& prefix, bool right = false, bool root = false) {
+Node* RBTree::findPath(Node* current, int theint, string& path, const string& prefix, bool right, bool root) {
     if (current == NIL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NIL
         return NIL; //this works since BSTs are organized by int comparison, so we can be sure it isn't just somewhere else in the tree
     }
@@ -187,7 +189,7 @@ Node* RBTree::findPath(Node* current, int theint, string& path, const string& pr
     if (!found && lr) { //if we havent't found anything yet and we need to check to the right
         foundNode = findPath(current->getNext(lr), theint, path, childPrefix, lr); //try to find the node to the right, and continue building the path string with the child prefix
     }
-    path += "\n" + prefix + curve + to_string(current->getData()); //add the current node to the path using the prefix passed down from its ancestors, and the curve
+    path += "\n" + prefix + curve + to_string(current->getData()) + " [" + (current->getRed() ? "R" : "B") + "]"; //add the current node to the path using the prefix passed down from its ancestors, and the curve
     if (found) { //if this was the node we were trying to find, we also add a marker arrow after the node
         path += "  <----- HERE IT IS!"; //makes it very obvious, also the marker looks nice actually
         return current; //return the node because that's what we were trying to find!
@@ -199,14 +201,14 @@ Node* RBTree::findPath(Node* current, int theint, string& path, const string& pr
 }
 
 //finds and returns the node with the given int, and builds a string showing the path to it starting from the root
-Node* getNode(int query, string& visual) {
+Node* RBTree::getNode(int query, string& visual) {
     Node* address = findPath(root, query, visual, "", false, true); //finds the node with the query int starting from the root and builds the path string
     if (address == NIL) return NULL; //return NULL if the int isn't there and we found NIL (because we can't compare to NIL in main since it's part of the tree class)
     return address; //return the node we found if we did indeed find the int in the tree
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
-void RBTree::printNode(ostream& out, Node* current, const string prefix = "", bool right = false, bool root = false) {
+void RBTree::printNode(ostream& out, Node* current, const string prefix, bool right, bool root) const {
     if (current == NIL) { //no ints in the tree to print, we know this because we manually check if children are nil before recursively passing them back into this function, so if current is nil it's guaranteed to be the first call
         out << "\nTree is empty, no integers to print. (Type HELP for help)";
         return;
@@ -222,9 +224,9 @@ void RBTree::printNode(ostream& out, Node* current, const string prefix = "", bo
         if (!root) { //if this is a left child, the right child will have an extra line over it, since we just curved back towards the parent above. Visual: |_|
             childPrefix += !right ? "|   " : "    "; //otherwise just do a fake tab, we use spaces since our implementation must have consistent spacing on all consoles
         } //starts printing the left child with the new prefix
-        printNode(child, childPrefix, true);
+        printNode(out, child, childPrefix, true);
     } //prints the current node after everything to the left of it (printing in this order makes it so the tree gets automatically spaced and formatted!)
-    out << '\n' << prefix << curve << current->getData() << " (" << (current->getRed() ? "Red" : "Black") << ")"; //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
+    out << '\n' << prefix << curve << current->getData() << " [" << (current->getRed() ? "R" : "B") << "]"; //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
     if (current->getAmount() > 1) { //if there's more than just one of that int, we also print how much of that int there is
         out << " (" << current->getAmount() << ")";
     }
@@ -234,13 +236,13 @@ void RBTree::printNode(ostream& out, Node* current, const string prefix = "", bo
         if (!root) { //if this is a right child, the left child will have an extra line, since we're curving back towards the parent. Visual: _|'|
             childPrefix += right ? "|   " : "    "; //otherwise do the fake tab                                                                |
         } //starts printing the right child with the new prefix
-        printNode(child, childPrefix, false);
+        printNode(out, child, childPrefix, false);
     }
 }
 
 //overloads the << operator so we can cout << tree and it prints out a visual of the tree
 ostream& operator<<(std::ostream& out, const RBTree& tree) {
-    printNode(out, root, "", false, true); //calls the recursive tree printer starting from the root
+    tree.printNode(out, tree.root, "", false, true); //calls the recursive tree printer starting from the root
     return out; //returns out to support cout chaining (eg. cout << tree1 << tree2, etc. I don't use this but that's why << overloads return the ostream&)
 }
 
@@ -257,7 +259,7 @@ void RBTree::censeTree(Node* current, long long& sum, size_t& population) { //th
 //prints the average of all the ints.
 long double RBTree::getAverage() {
     if (root == NIL) {
-        return numeric_limits<T>::quiet_NaN();
+        return numeric_limits<long double>::quiet_NaN();
     }
     long long sum = 0; //the sum is a long long int in case we have like a million ints in the tree, so we can fit them all in this big int
     size_t count = 0; //how many integers in the tree

@@ -30,4 +30,5 @@ private:
     bool red; //if it's a red node, otherwise it's black node
     size_t amount; //how many of this int is stored, in order to handle duplicates, 1 by default
 };
+
 #endif
