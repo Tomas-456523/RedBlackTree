@@ -7,6 +7,17 @@
 #include "Node.h"
 using namespace std;
 
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#define isatty _isatty
+#define fileno _fileno
+#endif
+
+bool RBTree::ansiAllowed() {
+    return false;
+}
+
 //on construction, initializes NIL and initializes the root to NIL
 RBTree::RBTree() : NIL(new Node(0)), root(NIL) {
     NIL->setNext(NIL, 0); //NIL points to itself
@@ -167,6 +178,22 @@ void RBTree::remove(int theint) { //must be its own seperate function instead of
     removeNode(root, theint);
 }
 
+//formats the given node's data with its respective color and the given prefix as a string
+string RBTree::formatNode(Node* node, const string& prefix) {
+    bool works = true; //gets if ansi escape codes are supported
+    string output = "\n" + prefix; //starts building the string with the prefix in a new line
+    if (works) { //if ansi escape codes are supported, we set the color to either bold red or white, corresponding to the node's color
+        output += (node->getRed() ? "\033[1;31m" : "\033[1m");
+    } //prints the data, colored or not
+    output += to_string(node->getData());
+    if (works) { //reset the color if the codes were supported, so we go back to printing regular white text
+        output += "\033[0m";
+    }
+    else { //if the codes aren't supported, we print a label so the information isn't lost (looks like: [R] or [B])
+        output += " [" + (node->getRed() ? "R" : "B") + "]";
+    }
+}
+
 //recursively searches through the tree and returns the node whose data matches the given int, and also builds a string with a visual representation of the path to it, used by search
 Node* RBTree::findPath(Node* current, int theint, string& path, const string& prefix, bool right, bool root) {
     if (current == NIL) { //if we ran out of nodes, that means the int is nowhere in the tree, so we just return NIL
@@ -189,7 +216,7 @@ Node* RBTree::findPath(Node* current, int theint, string& path, const string& pr
     if (!found && lr) { //if we havent't found anything yet and we need to check to the right
         foundNode = findPath(current->getNext(lr), theint, path, childPrefix, lr); //try to find the node to the right, and continue building the path string with the child prefix
     }
-    path += "\n" + prefix + curve + to_string(current->getData()) + " [" + (current->getRed() ? "R" : "B") + "]"; //add the current node to the path using the prefix passed down from its ancestors, and the curve
+    path += formatNode(current, prefix + curve); //add the current node to the path using the prefix passed down from its ancestors, and the curve
     if (found) { //if this was the node we were trying to find, we also add a marker arrow after the node
         path += "  <----- HERE IT IS!"; //makes it very obvious, also the marker looks nice actually
         return current; //return the node because that's what we were trying to find!
@@ -208,7 +235,7 @@ Node* RBTree::getNode(int query, string& visual) {
 }
 
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
-void RBTree::printNode(ostream& out, Node* current, const string prefix, bool right, bool root) const {
+void RBTree::printNode(ostream& out, Node* current, const string& prefix, bool right, bool root) const {
     if (current == NIL) { //no ints in the tree to print, we know this because we manually check if children are nil before recursively passing them back into this function, so if current is nil it's guaranteed to be the first call
         out << "\nTree is empty, no integers to print. (Type HELP for help)";
         return;
@@ -226,7 +253,7 @@ void RBTree::printNode(ostream& out, Node* current, const string prefix, bool ri
         } //starts printing the left child with the new prefix
         printNode(out, child, childPrefix, true);
     } //prints the current node after everything to the left of it (printing in this order makes it so the tree gets automatically spaced and formatted!)
-    out << '\n' << prefix << curve << current->getData() << " [" << (current->getRed() ? "R" : "B") << "]"; //prints the preceding stuff over the int, then the connector curve to the parent, and finally the int itself, all in a new line
+    out << formatNode(current, prefix + curve); //prints the stuff before the int including the line connecting it to the parent, and indicates the node's color
     if (current->getAmount() > 1) { //if there's more than just one of that int, we also print how much of that int there is
         out << " (" << current->getAmount() << ")";
     }

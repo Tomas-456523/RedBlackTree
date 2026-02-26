@@ -34,10 +34,12 @@ private:
     void removeNode(Node*& current, int theint); //recursively finds the node with the integer to remove, decrements it, and deletes it if the amount reaches 0. Then adjusts the tree accordingly
 
     void censeTree(Node* current, long long& sum, size_t& population); //recursively finds the sum of all ints in the tree and the amount of ints by adding up the passed counters
-    Node* findPath(Node* current, int theint, std::string& path, const std::string& prefix, bool right = false, bool root = false); //finds the node with the given int and builds a visual of the path to it in the given string
-    void printNode(std::ostream& out, Node* current, const std::string prefix = "", bool right = false, bool root = false) const; //recursively prints a visual of the tree to the given ostream
-
+    bool ansiAllowed(); //get if ansi escape codes are allowed, used by formatNode to check if it should add the codes
+    std::string formatNode(Node* node, const std::string& prefix); //formats the node using the given prefix into a strings, and decides whether to set the text's color or just add a color label depending on if ansi escape codes are supported
     void deleteAll(Node* current); //recursively deletes every node, called in the destructor
+    
+    Node* findPath(Node* current, int theint, std::string& path, const std::string& prefix, bool right = false, bool root = false); //finds the node with the given int and builds a visual of the path to it in the given string
+    void printNode(std::ostream& out, Node* current, const std::string& prefix = "", bool right = false, bool root = false) const; //recursively prints a visual of the tree to the given ostream
 };
 
 #endif
