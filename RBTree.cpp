@@ -3,19 +3,42 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <cstdio>
 #include "RBTree.h"
 #include "Node.h"
 using namespace std;
 
-#ifdef _WIN32
-#include <windows.h>
-#include <io.h>
-#define isatty _isatty
-#define fileno _fileno
+#ifdef _WIN32 //defines stuff which ansiAllowed uses which might be different across platforms
+    #include <windows.h> //get windows stuff
+    #include <io.h>
+    #define isatty _isatty //windows defines these with an underscore for some reason so for consistency and cleaner code I rename them to match unix
+    #define fileno _fileno
+#elif defined(__unix__) //defines the unix variables if it's unix instead of windows
+    #include <unistd.h>
+#else //if it's neither windows nor unix but some random weird thing
+    int isatty(int)   { return  0;} //we don't know if ansi escape codes will be supported on the weird platform so we just set these so they always make ansiAllowed return false
+    int fileno(FILE*) { return -1;} //I never use the -1 but 0 is a success on unix so for consistency I used that specifically
 #endif
 
-bool RBTree::ansiAllowed() {
-    return false;
+//get if we're allowed to use ansi escape codes, since some terminals or non-terminal outputs may not support it
+bool RBTree::ansiAllowed() const {
+    static bool ran = false; //if we've run this check before, tracked so we don't unnecessarily do all those checks again
+    static bool allowed; //the result of the check
+    if (ran) return allowed; //return the result of the check if we've done one before
+
+    ran = true; //we're doing the check now so track that
+
+    //isatty makses sure we're outputting to a terminal, fileno translates a FILE* (file stream object) to an int isatty can use, which might vary by os, and stdout is the output object, what cout outputs to
+    if (!isatty(fileno(stdout))) return allowed = false; //return and set allowed to false if the output isn't a terminal, because non-terminals probably don't support ansi escape codes
+    #ifdef _WIN32 //if we're on windows
+        HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE); //windows uses handles to handle files and stuff, and we get the handle that handles output
+        if (handle == INVALID_HANDLE_VALUE) return allowed = false; //we can't use ansi escape codes if the handle was something invalid
+        DWORD mode = 0; //dwords are used for flags in windows, and this one is used to track handle's flags
+        if (!GetConsoleMode(handle, &mode)) return allowed = false; //sets mode based on the handle, and if the mode getting failed ansi escape codes are prolly not allowed
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING; //ors (if ansi escape codes are allowed) into the rest of the flags
+        if (!SetConsoleMode(handle, mode)) return allowed = false; //sets the console's mode according to the flags we've gotten, and ansi escape codes are not allowed if this process fails
+    #endif
+    return allowed = true; //if we encountered no issues, we can indeed use ansi escape codes
 }
 
 //on construction, initializes NIL and initializes the root to NIL
@@ -179,19 +202,19 @@ void RBTree::remove(int theint) { //must be its own seperate function instead of
 }
 
 //formats the given node's data with its respective color and the given prefix as a string
-string RBTree::formatNode(Node* node, const string& prefix) {
-    bool works = true; //gets if ansi escape codes are supported
+string RBTree::formatNode(Node* node, const string& prefix) const {
+    bool ansiworks = ansiAllowed(); //gets if ansi escape codes are supported
     string output = "\n" + prefix; //starts building the string with the prefix in a new line
-    if (works) { //if ansi escape codes are supported, we set the color to either bold red or white, corresponding to the node's color
+    if (ansiworks) { //if ansi escape codes are supported, we set the color to either bold red or white, corresponding to the node's color
         output += (node->getRed() ? "\033[1;31m" : "\033[1m");
     } //prints the data, colored or not
     output += to_string(node->getData());
-    if (works) { //reset the color if the codes were supported, so we go back to printing regular white text
+    if (ansiworks) { //reset the color if the codes were supported, so we go back to printing regular white text
         output += "\033[0m";
+    } else { //if the codes aren't supported, we print a label so the information isn't lost (looks like: [R] or [B])
+        output += " [" + string(node->getRed() ? "R" : "B") + "]";
     }
-    else { //if the codes aren't supported, we print a label so the information isn't lost (looks like: [R] or [B])
-        output += " [" + (node->getRed() ? "R" : "B") + "]";
-    }
+    return output; //return what we got!
 }
 
 //recursively searches through the tree and returns the node whose data matches the given int, and also builds a string with a visual representation of the path to it, used by search

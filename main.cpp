@@ -9,7 +9,7 @@
 *  
 *  RED-BLACK TREE RULES:
 *  1. The root is black
-*  2. All leaves are black
+*  2. All leaves (NIL nodes) are black
 *  3. Red nodes have only black children
 *  4. Counting the black nodes starting from any node and going to any of its descendants should return the same amount
 */
@@ -152,13 +152,23 @@ void printAverage(RBTree& tree) {
     } //prints the average!
     cout << "\nTree average: " << avg;
 }
-
+#include <random>
 //the main loop
 int main() {
+    string username; //tries to find the username because Rubert wants to greet the user personally
+    if (const char* name = getenv("USER")) { //unix terminals store the username under USER, so first we try to get that
+        username = name; //set the name to that if it didn't return NULL
+    } else if (const char* name = getenv("USERNAME")) { //if getting the name with USER returned NULL, try to get it with USERNAME because windows stores it like that
+        username = name;
+    }
+    if (!username.empty()) { //capitalize the first letter of the username if we found one because when I saw my name in the terminal it was all lowercase and it looked weird
+        username[0] = toupper(static_cast<unsigned char>(username[0]));
+    }
+
     RBTree tree = RBTree(); //the red-black tree, starts with a NIL root until something is added
 
-    //welcome message with instructions, also sets precision to 3 decimal points for the average function
-    cout << "\nI've been expecting you. I am Rubert the Red-Black Tree, and I maintain the balance for integers 1 through 999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
+    //welcome message with instructions with a username-based greeting if we were able to find it, and also sets precision to 3 decimal points for the average function
+    cout << "\nI've been expecting you" << (username.empty() ? "" : ", " + username) << ". I am Rubert, regent of Red-Black Trees. (RB Trees handle integers 1-999)\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
     string command; //the command that the user inputs into
     //continues until continuing is falsified (by typing QUIT)
@@ -168,6 +178,26 @@ int main() {
         getline(cin, command); //gets the player input
 
         AllCaps(command); //capitalizes the command for easier interpretation
+
+        //main menu for managing all red black trees
+        //PLANT
+        //SELECT
+        //COPY
+        //DELETE
+        //TREES
+        //QUIT
+
+        //after using select on one rb tree
+        //ADD
+        //READ
+        //RENAME
+        //REMOVE
+        //SEARCH
+        //PRINT
+        //AVERAGE (or STATS?)
+        //HELP
+        //BACK
+        //QUIT
 
         //calls function corresponding to the given command word
         if (command == "ADD") { //add integer(s)
@@ -183,7 +213,7 @@ int main() {
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(tree);
         } else if (command == "HELP") { //print all valid command words
-            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - THIS COMMAND IS CURRENTLY UNDER CONSTRUCTION.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
+            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable
