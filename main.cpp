@@ -20,7 +20,6 @@
 #include <iomanip>
 #include <string>
 #include <limits>
-#include <cmath>
 #include "Node.h"
 #include "RBTree.h"
 using namespace std;
@@ -117,17 +116,28 @@ void readInts(RBTree& tree) {
 }
 
 //gets an integer to remove from the tree and starts the integer removal process
-void removeInt(Node*& root) {
-    /*if (root == NIL) { //error text and return if there's no tree to remove from yet
+void removeInt(RBTree& tree) {
+    if (tree.empty()) { //error text and return if there's no tree to remove from yet
         cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
         return;
-    } //prompt
-    cout << "\nWhich integer do you want to remove?";
-    removeNode(root, makeInt()); //gets an int from the user and starts the int removal process for that int*/
+    }
+    cout << "\nWhich integer do you want to remove?"; //prompt!
+    int remaining = tree.remove(makeInt()); //gets an int from the user, starts the int removal process for that int, and checks how much of the int is left
+    if (!remaining) {
+        cout << "\nSuccessfully removed " << theint << " from the tree!";
+    } else if (remaining > 0) {
+        cout << "\nRemoved one " << theint << " from tree; " << current->getAmount() << " of this integer left.";
+    } else {
+        cout << "\n" << theint << " is not in the tree; can't remove anything.";
+    }
 }
 
 //confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
 void searchInt(RBTree& tree) {
+    if (tree.empty()) { //error text and return because any search would return NULL (I could just go with the process normally and it would be accurate but this is just for clarity)
+        cout << "\nTree is empty, no integers to search for. (Type HELP for help)";
+        return;
+    }
     cout << "\nWhat integer do you want to search for?"; //prompt
     int theint = makeInt(); //gets the int the user wants to find
     string path; //the path visual string which we build into
@@ -145,14 +155,13 @@ void searchInt(RBTree& tree) {
 
 //finds the average of all the values in the tree and prints that
 void printAverage(RBTree& tree) {
-    long double avg = tree.getAverage(); //asks the tree what its average is
-    if (isnan(avg)) { //error text and return because there's no ints in the tree to get the average value of
-        cout << "\nThere are no integers to average. (Type HELP for help)";
+    if (tree.empty()) { //error text and return if there's no integers in the tree to average
+        cout << "\nTree is empty, no integers to average. (Type HELP for help)";
         return;
-    } //prints the average!
-    cout << "\nTree average: " << avg;
+    }
+    cout << "\nTree average: " << tree.getAverage(); //asks the tree what its average is and prints it!
 }
-#include <random>
+
 //the main loop
 int main() {
     string username; //tries to find the username because Rubert wants to greet the user personally
@@ -205,7 +214,7 @@ int main() {
         } else if (command == "READ") { //read in integers from file
             readInts(tree);
         } else if (command == "REMOVE") { //remove a specified int in the tree
-            cout << "\nThis command be unimplemented at the moment."; //removeInt(tree);
+            removeInt(tree);
         } else if (command == "SEARCH") { //find a given int in the tree
             searchInt(tree);
         } else if (command == "PRINT") { //print visualization of tree
