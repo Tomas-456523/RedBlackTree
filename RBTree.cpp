@@ -42,11 +42,12 @@ bool RBTree::ansiAllowed() const {
 }
 
 //on construction, initializes NIL and initializes the root to NIL
-RBTree::RBTree() : NIL(new Node(0)), root(NIL) {
+RBTree::RBTree(const string& _name) : NIL(new Node(0)), root(NIL) {
     NIL->setNext(NIL, 0); //NIL points to itself
     NIL->setNext(NIL, 1);
     NIL->setPrev(NIL); //NIL's parent is occasionally set during balancing, but points to itself by default
     NIL->setRed(0); //NIL is black in order to follow the RB tree rules
+    name = _name; //sets the name to what was passed
 }
 
 //recursively delete all the nodes, branch off from current and delete all descendants then delete the current node
@@ -62,6 +63,11 @@ void RBTree::deleteAll(Node* current, int* tally) { //optionally counts how many
 RBTree::~RBTree() {
     deleteAll(root); //delete all the nodes that aren't NIL
     delete NIL; //delete NIL since it's associated with the tree instance
+}
+
+//returns the name of the tree, as a reference for efficiency
+string& RBTree::getName() {
+    return name;
 }
 
 //recursively delete every node and reset the root to NIL, and return how many ints were deleted
@@ -105,25 +111,25 @@ void RBTree::rotateNode(Node* _node, bool right) { //"right" represents if it's 
 
 //balances the tree after having inserted a node
 void RBTree::balanceInsertion(Node* current) {
-    while (current->getPrev()->getRed()) { //do the balancing process while the current node's parent is red
+    while (current->getPrev()->getRed()) { //do the balancing process while the current node's parent is red, since new nodes aren't black, so they can only violate the no double red rule
         Node* parent = current->getPrev(); //get references to the parent and grandparent of the current node
         Node* gparent = parent->getPrev();
         bool pright = parent == gparent->getNext(1); //we orient the operations around if the parent is a left or right child
 
         Node* uncle = gparent->getNext(!pright); //the uncle is the grandparent's child on the opposite side from the parent
 
-        if (uncle->getRed()) { //CASE 1: if the uncle is red
+        if (uncle->getRed()) { //CASE 1: if the uncle is red, we push the color black down from the grandparent
             gparent->setRed(1); //make the grandparent red
             parent->setRed(0); //make the grandparent's children black
             uncle->setRed(0);
             current = gparent; //move to the grandparent to keep balancing from there
-        } else if (current == parent->getNext(!pright)) { //CASE 2: if current is the pleft child
+        } else if (current == parent->getNext(!pright)) { //CASE 2: if current is the pleft child, we have to rotate it to get to case 3
             current = parent; //move to the parent to keep balancing from there
             rotateNode(current, pright); //rotate the current node (the old parent) to the pright
-        } else { //CASE 3: if current is the pright child
+        } else { //CASE 3: if current is the pright child, we can finally balance the subtree
             parent->setRed(0); //make the parent black and the grandparent red
             gparent->setRed(1);
-            rotateNode(gparent, !pright); //rotate the grandparent to the pright
+            rotateNode(gparent, !pright); //rotate the grandparent to the pright to make the now black parent the parent of the red current and gparent, thus resolving the double red situation
         }
     }
     //make sure root is black
@@ -131,14 +137,14 @@ void RBTree::balanceInsertion(Node* current) {
 }
 
 //balances the tree after having deleted a node, assumes the node that was deleted is black before this is called
-void RBTree::balanceDeletion(Node* current) {
+void RBTree::balanceDeletion(Node* current) { //conceptually, removing a black node means we have an "extra black" which we must place somewhere, either by reaching the root or painting a red node black
     while (current != root && !current->getRed()) { //while we're not at the root and we're currently at a black node
         Node* parent = current->getPrev(); //gets the parent of the current node
         bool xright = current == parent->getNext(1); //if current is a right child, we orient the balancing around this much like in insertion. Also, it's xright instead of cright because CLRS calls it x, and cleft is something else. Also it sounds cooler
 
         Node* sibling = parent->getNext(!xright); //gets the sibling node on the opposite side of the parent
 
-        if (sibling->getRed()) { //CASE 1: if the sibling is red
+        if (sibling->getRed()) { //CASE 1: if the sibling is red, we need it to be black to get to the other cases
             sibling->setRed(0); //make the sibling black
             parent->setRed(1); //make the parent red
             rotateNode(parent, xright); //rotate the parent to the xright
@@ -148,12 +154,12 @@ void RBTree::balanceDeletion(Node* current) {
         Node* lnephew = sibling->getNext(!xright); //far nephew
         Node* rnephew = sibling->getNext(xright); //near nephew
 
-        if (!lnephew->getRed() && !rnephew->getRed()) { //CASE 2: if both the nephews are black
+        if (!lnephew->getRed() && !rnephew->getRed()) { //CASE 2: if both the nephews are black, we have to propagate the extra black upwards
             sibling->setRed(1); //make the sibling red
             current = parent; //move to the parent
             parent = current->getPrev(); //update the parent accordingly
         } else { //if one of the nephews is red
-            if (!lnephew->getRed()) { //CASE 3: if only the far nephew is black
+            if (!lnephew->getRed()) { //CASE 3: if only the far nephew is black, we need to reverse the nephew colors to get to case 4
                 rnephew->setRed(0); //make the near nephew black
                 sibling->setRed(1); //make the sibling red
                 rotateNode(sibling, !xright); //rotate the sibling to the xleft
@@ -171,8 +177,8 @@ void RBTree::balanceDeletion(Node* current) {
             current = root; //move to the root so that we stop balancing; tree seems balanced enough
         }
     } //set current to black because A, we ended at the root and we need to make sure the root is black
-    current->setRed(0); //or B, we ended at a red node, and since removing a black node decreased the black height of the branch by one which we needed to resolve that to match the other branches, and we can resolve that by making a red node black, adding 1 black height back
-} //conceptually, the root absorbs the double black because at that point, everything under it has been resolved, and the root has no other branch to compete against, since it's the root
+    current->setRed(0); //or B, we ended at a red node, and we need to paint it black to put the extra black here
+}
 
 //recursively find where to put the int and then put it there, or increment the duplicate counter if it's a duplicate
 void RBTree::addInt(Node*& current, Node* parent, int theint) {
@@ -318,7 +324,7 @@ Node* RBTree::findPath(Node* current, int theint, string& path, const string& pr
 }
 
 //finds and returns the node with the given int, and builds a string showing the path to it starting from the root
-Node* RBTree::getNode(int query, string& visual) {
+Node* RBTree::search(int query, string& visual) {
     Node* address = findPath(root, query, visual, "", false, true); //finds the node with the query int starting from the root and builds the path string
     if (address == NIL) return NULL; //return NULL if the int isn't there and we found NIL (because we can't compare to NIL in main since it's part of the tree class)
     return address; //return the node we found if we did indeed find the int in the tree
@@ -327,7 +333,7 @@ Node* RBTree::getNode(int query, string& visual) {
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
 void RBTree::printNode(ostream& out, Node* current, const string& prefix, bool right, bool root) const {
     if (current == NIL) { //no ints in the tree to print, we know this because we manually check if children are nil before recursively passing them back into this function, so if current is nil it's guaranteed to be the first call
-        out << "\nTree is empty, no integers to print. (Type HELP for help)";
+        out << "\nTree \"" << name << "\" is empty, no integers to print. (Type HELP for help)";
         return;
     }
     string curve; //the curvy line that connects the vertical line or parent to the number, defaults to "" for the root
@@ -387,4 +393,47 @@ long double RBTree::getAverage() {
     size_t count = 0; //how many integers in the tree
     censeTree(root, sum, count); //start the sum and count censusing process starting from the root
     return static_cast<long double>(sum)/count; //prints the average (as a long double so division doesn't truncate)
+}
+
+//recurses through the tree to make sure the black height between each node and its descendants is the same, and also finds double red node errors
+size_t RBTree::checkNode(Node* current, RBStatus& status, int min, int max) { //also needs to check bounds to check if it follows BST order
+    if (current == NIL) return 0; //return if we've reached the end of the tree
+    
+    //checks if the current value is outside the bounds, meaning it's not properly balancd according to BST order
+    if (current->getData() < min || current->getData() > max) {
+        status.bstOrder = false; //marks the rule as violated
+        status.orderviolators.push_back(current->getData()); //adds the violator to the tracker so it's easier to tell where the violation was
+    }
+    size_t bhincrement = (!current->getRed() ? 1 : 0); //adds 1 to the black height if the current node is black
+    size_t lbh = checkNode(current->getNext(0), status, min, current->getData()); //check the left and right branches, bounded within the current node's value according to BST order
+    size_t rbh = checkNode(current->getNext(1), status, current->getData(), max);
+    
+    if (current->getRed() && current->getPrev()->getRed()) { //if this node and the node's parent are both red, that's two reds in a row which violates rule 3
+        status.redChildBlack = false; //marks the rule as violated
+        status.drviolators.push_back(current->getData()); //adds the violator to the tracker so it's easier to tell where the violation was
+    }
+    if (lbh != rbh) { //if the black heights of both branches don't match, that's a violation of rule 4
+        status.blackHeightEqual = false; //marks the rule as violated
+        status.bhviolators.push_back(current->getData()); //adds the violator to the tracker so it's easier to tell where the violation was
+    }
+
+    return lbh + bhincrement; //the black height from this node is the black height of one of the diretcions (they SHOULD both be the same) plus 1 if this is a black node
+}
+
+//checks the tree for if it follows all the RB tree properties, then returns a struct with the data it collected
+RBStatus RBTree::verify() {
+    RBStatus status = RBStatus(); //initialize the rule tracker, all rules are true by default (meaning innocent until proven guilty)
+
+    if (NIL->getRed()) status.nilBlack = false; //if the root or NIL is red, that's invalid and we set their respective rule bool to false because they're not following the rules
+    if (root->getRed()) status.rootBlack = false;
+
+    //make sure the tree's red nodes have only black children and that the black height is equal across all paths (also finds the black height from the root. If the tree is faulty, the black height will be the bh of the leftmost branch)
+    status.blackHeight = checkNode(root, status, numeric_limits<int>::min(), numeric_limits<int>::max()); //also sets the initial bounds to anything within the 32-bit integer limit
+
+    return status; //return the data we just collected
+}
+
+//renames the tree to whatever name is passed
+void RBTree::rename(string& _name) {
+    name = _name;
 }

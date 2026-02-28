@@ -12,6 +12,11 @@
 *  2. All leaves (NIL nodes) are black
 *  3. Red nodes have only black children
 *  4. Counting the black nodes starting from any node and going to any of its descendants should return the same amount
+*  
+*  Rule 4 ensures the tree doesn't lean too heavily to one side, and rule 3 reinforces this by making sure chains of red
+*  nodes don't invalidate the effects of rule 4, by not allowing red chains. Rule 1 makes implementation and proofs more
+*  convenient. Rule 2 is because although NIL is technically shared, conceptually it's many different nodes, so making
+*  it red would conceptually make some paths have different black heights, invalidating rule 4.
 */
 
 #include <iostream>
@@ -118,7 +123,7 @@ void readInts(RBTree& tree) {
 //gets an integer to remove from the tree and starts the integer removal process
 void removeInt(RBTree& tree, bool erase) { //erase is if we should remove all of that integer as opposed to just one
     if (tree.empty()) { //error text and return if there's no tree to remove from yet
-        cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
+        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to remove. (Type HELP for help)";
         return;
     }
     cout << "\nWhich integer do you want to remove?"; //prompt!
@@ -138,7 +143,7 @@ void removeInt(RBTree& tree, bool erase) { //erase is if we should remove all of
 //clears all the ints from the tree, resetting it to its initial state
 void clearTree(RBTree& tree) {
     if (tree.empty()) { //error text and return if the tree is empty already, just for consistency since the other functions say something similar
-        cout << "\nTree is already empty. (Type HELP for help)";
+        cout << "\nTree \"" << tree.getName() << "\" is already empty. (Type HELP for help)";
         return;
     }
     cout << "\nAre you sure? (Type YES if you're sure)\n> "; //confirms if the user is really sure, because this is a really destructive action
@@ -156,13 +161,13 @@ void clearTree(RBTree& tree) {
 //confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
 void searchInt(RBTree& tree) {
     if (tree.empty()) { //error text and return because any search would return NULL (I could just go with the process normally and it would be accurate but this is just for clarity)
-        cout << "\nTree is empty, no integers to search for. (Type HELP for help)";
+        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to search for. (Type HELP for help)";
         return;
     }
     cout << "\nWhat integer do you want to search for?"; //prompt
     int theint = makeInt(); //gets the int the user wants to find
     string path; //the path visual string which we build into
-    Node* thenode = tree.getNode(theint, path); //finds the node with the int and builds the visual of the path to the int
+    Node* thenode = tree.search(theint, path); //finds the node with the int and builds the visual of the path to the int
     if (thenode == NULL) { //if buildPath returns an empty string that means the tree does not contain the int
         cout << "\n" << theint << " is not in the tree."; //so we say that and return
         return;
@@ -177,10 +182,47 @@ void searchInt(RBTree& tree) {
 //finds the average of all the values in the tree and prints that
 void printAverage(RBTree& tree) {
     if (tree.empty()) { //error text and return if there's no integers in the tree to average
-        cout << "\nTree is empty, no integers to average. (Type HELP for help)";
+        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to average. (Type HELP for help)";
         return;
     } //asks the tree what its average is and prints it!
     cout << "\nTree average: " << tree.getAverage();
+}
+
+//verify that the tree follows all the RB tree properties, just to be sure
+void verifyTree(RBTree& tree) {
+    RBStatus status = tree.verify(); //gets the rule following status of the tree
+    if (status.bstOrder && status.rootBlack && status.nilBlack && status.redChildBlack && status.blackHeightEqual) cout << "\nTREE IS VALID!\n"; //first, prints a clear announcement of whether the tree is valid or not
+    else                                                                                                           cout << "\nTREE IS INVALID.\n";
+
+    if (status.bstOrder)         cout << "\nRespects binary search tree order."; //says if bst order is followed or not
+    else                       { cout << "\nVIOLATES BINARY SEARCH TREE ORDER.\nRule is violated at:";
+        for (int i : status.orderviolators) cout << " " << i; //says every location where the rule is violated for convenience
+    }
+    if (status.rootBlack)        cout << "\nRespects rule 1 - Root is black."; //says if rule 1 is followed or not
+    else                         cout << "\nVIOLATES RULE 1 - Root is red.";
+    if (status.nilBlack)         cout << "\nRespects rule 2 - NIL is black."; //says if rule 2 is followed or not
+    else                         cout << "\nVIOLATES RULE 2 - NIL is red.";
+    if (status.redChildBlack)    cout << "\nRespects rule 3 - All red nodes have black children."; //says if rule 3 is followed or not
+    else                       { cout << "\nVIOLATES RULE 3 - Red nodes with red children detected.\nRule is violated at:";
+        for (int i : status.drviolators) cout << " " << i; //says every location where the rule is violated for convenience
+    }
+    if (status.blackHeightEqual) cout << "\nRespects rule 4 - All siblings' black heights are equal.\nB"; //says if rule 4 is followed or not, also begins the formatting for the final black height printing, since the beginning might be different depending on if the rule is followed or not
+    else                       { cout << "\nVIOLATES RULE 4 - Unequal black heights detected.\nRule violated at:";
+        for (int i : status.bhviolators) cout << " " << i; //says every location where the rule is violated for convenience
+        cout << "\nEstimated b"; //begins the violated rule version of the black height printing, estimated since the black height is unfortunately varied at this point
+    } //also says the black height of the tree. If the tree is invalid, this is the black height of the leftmost branch
+    cout << "lack height from root: " << status.blackHeight;
+}
+
+//rename the tree to a new name from the user
+void renameTree(RBTree& tree) {
+    string oldname = tree.getName(); //stores the old name so we can print what we changed it from later
+    cout << "\nWhat would you like to rename tree \"" << oldname << "\" to?\n> "; //asks the user what to rename the tree, and reminds them what the tree is currently called
+    string name; //text used to get the name
+    getline(cin, name); //gets the new name from the user
+    tree.rename(name); //renames the tree to the new name!
+    if (name == oldname) cout << "\nDid not rename tree \"" << name << "\"."; //prints confirmation that the new name is the same as the old name, so we didn't change the name
+    else                 cout << "\nSuccessfully renamed tree \"" << oldname << "\" to \"" << name << "\"!"; //if we actually changed the name print the success text!
 }
 
 //the main loop
@@ -195,10 +237,10 @@ int main() {
         username[0] = toupper(static_cast<unsigned char>(username[0]));
     }
 
-    RBTree tree = RBTree(); //the red-black tree, starts with a NIL root until something is added
+    RBTree tree = RBTree(""); //the red-black tree, starts with a NIL root until something is added
 
     //welcome message with instructions with a username-based greeting if we were able to find it, and also sets precision to 3 decimal points for the average function
-    cout << "\nI've been expecting you" << (username.empty() ? "" : ", " + username) << ". I am Rubert, regent of Red-Black Trees. (RB Trees handle integers 1-999)\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
+    cout << "\nI've been expecting you" << (username.empty() ? "" : ", " + username) << ". I am Rubert, regent of Red-Black Trees. (Your tree handles integers 1-999)\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
     string command; //the command that the user inputs into
     //continues until continuing is falsified (by typing QUIT)
@@ -212,31 +254,8 @@ int main() {
         //TO-DO:
 
         //WE NEED TO UPDATE THE BIG COMMENT AT THE TOP
-        //more better document the balancing functions
 
-        //main menu for managing all red black trees
-        //PLANT
-        //SELECT
-        //COPY
-        //DELETE
-        //TREES
-        //HELP
-        //QUIT
-
-        //after using select on one rb tree
-        //ADD
-        //READ
-        //REMOVE
-        //ERASE
-        //CLEAR
-        //SEARCH
-        //PRINT
-        //STATS
-        //VERIFY this one
-        //RENAME this one
-        //HELP edit this one
-        //BACK
-        //QUIT
+        //edit HELP
 
         //calls function corresponding to the given command word
         if (command == "ADD") { //add integer(s)
@@ -256,8 +275,10 @@ int main() {
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(tree);
         } else if (command == "VERIFY") { //verify that the tree follows all the red-black tree rules
-            
-        } else if (command == "HELP") { //print all valid command words
+            verifyTree(tree);
+        } else if (command == "RENAME") { //rename the tree to a new name
+            renameTree(tree);
+        }else if (command == "HELP") { //print all valid command words
             cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
