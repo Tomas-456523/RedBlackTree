@@ -116,19 +116,40 @@ void readInts(RBTree& tree) {
 }
 
 //gets an integer to remove from the tree and starts the integer removal process
-void removeInt(RBTree& tree) {
+void removeInt(RBTree& tree, bool erase) { //erase is if we should remove all of that integer as opposed to just one
     if (tree.empty()) { //error text and return if there's no tree to remove from yet
         cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
         return;
     }
     cout << "\nWhich integer do you want to remove?"; //prompt!
-    int remaining = tree.remove(makeInt()); //gets an int from the user, starts the int removal process for that int, and checks how much of the int is left
-    if (!remaining) {
+    int theint = makeInt(); //gets an int from the user to erase
+    int remaining; //checks how much of the int is left so we can handle errors or print corresponding success text
+    if (!erase) remaining = tree.remove(theint); //remove one of the int normally, and get how much is left
+    else        remaining = tree.erase(theint); //remove all of the int, will either return 0 is left or an error
+    if (!remaining) { //if we removed the last of that int, we print the success text for that
         cout << "\nSuccessfully removed " << theint << " from the tree!";
-    } else if (remaining > 0) {
-        cout << "\nRemoved one " << theint << " from tree; " << current->getAmount() << " of this integer left.";
-    } else {
+    } else if (remaining > 0) { //if there's still some of the int left, we say how many
+        cout << "\nRemoved one " << theint << " from tree; " << remaining << " of this integer left.";
+    } else { //the tree returns negative amount for errors, meaning the int we were trying to remove is not in the tree, so we give an error for that
         cout << "\n" << theint << " is not in the tree; can't remove anything.";
+    }
+}
+
+//clears all the ints from the tree, resetting it to its initial state
+void clearTree(RBTree& tree) {
+    if (tree.empty()) { //error text and return if the tree is empty already, just for consistency since the other functions say something similar
+        cout << "\nTree is already empty. (Type HELP for help)";
+        return;
+    }
+    cout << "\nAre you sure? (Type YES if you're sure)\n> "; //confirms if the user is really sure, because this is a really destructive action
+    string surety; //text used to get the user's decision
+    getline(cin, surety); //gets if the user is sure
+    AllCaps(surety); //capitalize the sureness for easier comparison
+    if (surety == "YES") { //if the user was sure and typed exactly YES
+        int removed = tree.clear(); //clears the tree and gets how many ints were removed
+        cout << "\nTree successfully cleared! (Removed " << removed << " integer" << (removed != 1 ? "s" : "") << ")"; //success text and says how many ints were in the tree, with proper plurality
+    } else {
+        cout << "\nDid not clear the tree."; //confirms we did not clear anything, we were successfully unsuccessful
     }
 }
 
@@ -158,8 +179,8 @@ void printAverage(RBTree& tree) {
     if (tree.empty()) { //error text and return if there's no integers in the tree to average
         cout << "\nTree is empty, no integers to average. (Type HELP for help)";
         return;
-    }
-    cout << "\nTree average: " << tree.getAverage(); //asks the tree what its average is and prints it!
+    } //asks the tree what its average is and prints it!
+    cout << "\nTree average: " << tree.getAverage();
 }
 
 //the main loop
@@ -188,23 +209,32 @@ int main() {
 
         AllCaps(command); //capitalizes the command for easier interpretation
 
+        //TO-DO:
+
+        //WE NEED TO UPDATE THE BIG COMMENT AT THE TOP
+        //more better document the balancing functions
+
         //main menu for managing all red black trees
         //PLANT
         //SELECT
         //COPY
         //DELETE
         //TREES
+        //HELP
         //QUIT
 
         //after using select on one rb tree
         //ADD
         //READ
-        //RENAME
         //REMOVE
+        //ERASE
+        //CLEAR
         //SEARCH
         //PRINT
-        //AVERAGE (or STATS?)
-        //HELP
+        //STATS
+        //VERIFY this one
+        //RENAME this one
+        //HELP edit this one
         //BACK
         //QUIT
 
@@ -213,14 +243,20 @@ int main() {
             typeInts(tree);
         } else if (command == "READ") { //read in integers from file
             readInts(tree);
-        } else if (command == "REMOVE") { //remove a specified int in the tree
-            removeInt(tree);
-        } else if (command == "SEARCH") { //find a given int in the tree
+        } else if (command == "REMOVE") { //remove a specified int from the tree
+            removeInt(tree, false);
+        } else if (command == "ERASE") { //erase all of the specified int in the tree
+            removeInt(tree, true);
+        } else if (command == "CLEAR") { //delete all the nodes from the tree after a brief confirmation so only a NIL root remains
+            clearTree(tree);
+        } else if (command == "SEARCH") { //find a given int in the tree and the path to it
             searchInt(tree);
-        } else if (command == "PRINT") { //print visualization of tree
+        } else if (command == "PRINT") { //print visualization of the tree
             cout << tree; //I overloaded the << operator so we can just straight up print the tree
         } else if (command == "AVERAGE") { //print average of all ints
             printAverage(tree);
+        } else if (command == "VERIFY") { //verify that the tree follows all the red-black tree rules
+            
         } else if (command == "HELP") { //print all valid command words
             cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program

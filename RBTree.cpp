@@ -50,10 +50,11 @@ RBTree::RBTree() : NIL(new Node(0)), root(NIL) {
 }
 
 //recursively delete all the nodes, branch off from current and delete all descendants then delete the current node
-void RBTree::deleteAll(Node* current) {
+void RBTree::deleteAll(Node* current, int* tally) { //optionally counts how many ints were deleted, used by clear
     if (current == NIL) return; //if we've reached the end of the tree, there's nothing more to delete so just return
-    deleteAll(current->getNext(0)); //start deleting all descendants to the left
-    deleteAll(current->getNext(1)); //start deleting all descendants to the right
+    deleteAll(current->getNext(0), tally); //start deleting all descendants to the left
+    deleteAll(current->getNext(1), tally); //start deleting all descendants to the right
+    if (tally) *tally += current->getAmount();
     delete current; //now that all the descendants are deleted, delete the current node
 }
 
@@ -61,6 +62,14 @@ void RBTree::deleteAll(Node* current) {
 RBTree::~RBTree() {
     deleteAll(root); //delete all the nodes that aren't NIL
     delete NIL; //delete NIL since it's associated with the tree instance
+}
+
+//recursively delete every node and reset the root to NIL, and return how many ints were deleted
+int RBTree::clear() {
+    int tally = 0; //counts how many integers were deleted in this int
+    deleteAll(root, &tally); //start the recursive deletion process from the root
+    root = NIL; //make the root NIL, so now the tree is how it started
+    return tally; //return the amount that was deleted!
 }
 
 //returns a fresh link to the given Node* that makes sure it specifically references the parent's pointer to it. The root doesn't get affected since it has no parent
@@ -87,19 +96,12 @@ void RBTree::rotateNode(Node* _node, bool right) { //"right" represents if it's 
     lchild->setNext(node, right); //set lchild's right child to node
     node->setNext(lrchild, !right); //set node's left child to lchild's right child
     
-    if (lrchild != NIL) lrchild->setPrev(node); //if lrchild isn't NIL we tell it it has been adopted by node
-    lchild->setPrev(node->getPrev()); //set lchild's parent to node's old parent because it's in node's place now
+    if (lrchild != NIL) lrchild->setPrev(node); //we tell lrchild its parent is node now, unless it's NIL since if current in deletion is NIL, it relies on its parent not being changed, and NIL is shared
+    lchild->setPrev(node->getPrev()); //set lchild's parent to node's old parent because it's in node's place now. We don't have to check if lchild is NIL because if they're both NIL they will have the same parent anyway
     node->setPrev(lchild); //lchild is now node's parent so we set that
 
     node = lchild; //update node's old parent to now point to lchild instead
 }
-
-//reassigns the node's family and if it's a right child, used during deletion balancing process
-/*void RBTree::refamily(Node* node, Node*& parent, Node*& sibling, bool& nright) {
-    parent = node->getPrev(); //set the parent
-    nright = node == parent->getNext(1); //get if the node is a right child
-    sibling = parent->getNext(!nright); //get the sibling, the parent's child on the other side
-}*/
 
 //balances the tree after having inserted a node
 void RBTree::balanceInsertion(Node* current) {
@@ -129,86 +131,48 @@ void RBTree::balanceInsertion(Node* current) {
 }
 
 //balances the tree after having deleted a node, assumes the node that was deleted is black before this is called
-void RBTree::balanceDeletion(Node* x, Node* xpar) {
-    while (x != root && !x->getRed()) {
-        Node* parent = (x == NIL ? xpar : x->getPrev());
-        bool xright = x == parent->getNext(1);
+void RBTree::balanceDeletion(Node* current) {
+    while (current != root && !current->getRed()) { //while we're not at the root and we're currently at a black node
+        Node* parent = current->getPrev(); //gets the parent of the current node
+        bool xright = current == parent->getNext(1); //if current is a right child, we orient the balancing around this much like in insertion. Also, it's xright instead of cright because CLRS calls it x, and cleft is something else. Also it sounds cooler
 
-        Node* w = parent->getNext(!xright);
-
-        if (w->getRed()) { //CASE 1: if the sibling is red
-            w->setRed(0); //make the sibling black
-            parent->setRed(1); //make the parent red
-            rotateNode(parent, xright); //rotate the parent to the cleft
-            parent = (x == NIL ? xpar : x->getPrev());
-            w = parent->getNext(!xright);
-        }
-
-        Node* lnephew = w->getNext(!xright); //far nephew
-        Node* rnephew = w->getNext(xright); //near nephew
-
-        if (!lnephew->getRed() && !rnephew->getRed()) { //CASE 2: if both the nephews are black
-            w->setRed(1); //make the sibling red
-            x = parent; //move to the parent
-            xpar = x->getPrev();
-        } else {
-            if (!lnephew->getRed()) { //CASE 3: if only the far nephew is black
-                rnephew->setRed(0); //make the near nephew black
-                w->setRed(1); //make the sibling red
-                rotateNode(sibling,!xright); //rotate the sibling to the xleft
-                parent = (x == NIL ? xpar : x->getPrev());
-                w = parent->getNext(!xright);
-                lnephew = w->getNext(!xright);
-                rnephew = w->getNext(xright);
-            }
-
-            //CASE 4: if the far nephew is red
-            w->setRed(parent->getRed());
-            parent->setRed(0);
-            lnephew->setRed(0);
-            rotateNode(parent, xright);
-            x = root;
-        }
-
-
-        /*//Node* parent = current->getPrev();
-        bool cright = current == parent->getNext(1); //we orient the operations around if current is a left or right child
-
-        Node* sibling = parent->getNext(!cright);
-        //Node* lnephew = sibling->getNext(!cright);
-        //Node* rnephew = sibling->getNext(cright);
-
-        bool case4 = true;
+        Node* sibling = parent->getNext(!xright); //gets the sibling node on the opposite side of the parent
 
         if (sibling->getRed()) { //CASE 1: if the sibling is red
             sibling->setRed(0); //make the sibling black
             parent->setRed(1); //make the parent red
-            rotateNode(parent, !cright); //rotate the parent to the cleft
-            refamily(current, parent, sibling, cright);
-            case4 = false;
-        }
-        if (!sibling->getNext(!cright)->getRed() && !sibling->getNext(cright)->getRed()) { //CASE 2: if both the nephews are black
+            rotateNode(parent, xright); //rotate the parent to the xright
+            parent = current->getPrev(); //updates the family pointers accordingly
+            sibling = parent->getNext(!xright);
+        } //now we need to check the nephews! to see if we just messed their rule compliance up. If the sibling is NIL, then the nephews would also be NIL, and that would be bad except it isn't because then case 2 triggers and doesn't use nephews anyway
+        Node* lnephew = sibling->getNext(!xright); //far nephew
+        Node* rnephew = sibling->getNext(xright); //near nephew
+
+        if (!lnephew->getRed() && !rnephew->getRed()) { //CASE 2: if both the nephews are black
             sibling->setRed(1); //make the sibling red
             current = parent; //move to the parent
-            case4 = false;
-        } else if (!sibling->getNext(cright)->getRed()) { //CASE 3: if only the cright nephew is black
-            sibling->getNext(!cright)->setRed(0); //make the cleft nephew black
-            sibling->setRed(1); //make the sibling red
-            rotateNode(sibling, cright); //rotate the sibling to the cright
-            refamily(current, parent, sibling, cright);
-            case4 = false;
-        }
+            parent = current->getPrev(); //update the parent accordingly
+        } else { //if one of the nephews is red
+            if (!lnephew->getRed()) { //CASE 3: if only the far nephew is black
+                rnephew->setRed(0); //make the near nephew black
+                sibling->setRed(1); //make the sibling red
+                rotateNode(sibling, !xright); //rotate the sibling to the xleft
+                parent = current->getPrev(); //update the family accordingly
+                sibling = parent->getNext(!xright);
+                lnephew = sibling->getNext(!xright);
+                rnephew = sibling->getNext(xright);
+            }
 
-        if (case4) { //CASE 4: if none of the above cases happen
-            sibling->setRed(parent->getRed()); //make the sibling the same color as the parent
+            //CASE 4: if the far nephew is red, which might also have been due to case 3 if the near nephew was red instead
+            sibling->setRed(parent->getRed()); //make the sibling's color match the parent
             parent->setRed(0); //make the parent black
-            sibling->getNext(cright)->setRed(0); //make the cright nephew black
-            rotateNode(parent, !cright); //rotate the parent to the cleft
-            current = root; //move to the root
-        }*/
-    }
-    current->setRed(0); //set current to black
-}
+            lnephew->setRed(0); //make the far nephew black as well
+            rotateNode(parent, xright); //rotate the parent to the xright
+            current = root; //move to the root so that we stop balancing; tree seems balanced enough
+        }
+    } //set current to black because A, we ended at the root and we need to make sure the root is black
+    current->setRed(0); //or B, we ended at a red node, and since removing a black node decreased the black height of the branch by one which we needed to resolve that to match the other branches, and we can resolve that by making a red node black, adding 1 black height back
+} //conceptually, the root absorbs the double black because at that point, everything under it has been resolved, and the root has no other branch to compete against, since it's the root
 
 //recursively find where to put the int and then put it there, or increment the duplicate counter if it's a duplicate
 void RBTree::addInt(Node*& current, Node* parent, int theint) {
@@ -241,109 +205,67 @@ void RBTree::insert(int theint) { //needed because main doesn't know what the ro
     addInt(root, NIL, theint);
 }
 
-//gets the inorder successor to the given node (the node with smallest number greater than current's)
-Node*& RBTree::getSuccessor(Node* current) { //start finding the successor one to the right, since all numbers to the right are greater than current's
-    Node** successor = &current->getNext(1); //store successor as Node** instead of Node*& so we don't modify the tree while going to the left
-    while ((*successor)->getNext(0) != NIL) { //go to the left until we can't, since going to the left gives a smaller number, and we want the smallest number from here
-        successor = &(*successor)->getNext(0); //since successor is a Node**, we have do de-node it, go to the left, then pointerize it again
-    }
-    return *successor; //return the current successor because we've left the for loop meaning we've reached the leftmost and smallest number on the right branch of the passed node
+//gets the inorder successor to the given node (the node with smallest number greater than current's), assumes right child of the passed node is not NIL
+Node* RBTree::getSuccessor(Node* current) {
+    current = current->getNext(1); //start finding the successor one to the right, since all numbers to the right are greater than current's
+    while (current->getNext(0) != NIL) { //go to the left until we can't, since going to the left gives a smaller number, and we want the smallest number from here
+        current = current->getNext(0);
+    } //return the current successor because we've left the for loop meaning we've reached the leftmost and smallest number on the right branch of the passed node
+    return current;
 }
 
-//recursively finde the int to delete in the tree, and then delete it and reorganize the tree. The whole process works because Node.getNext returns a reference, and that also makes it so we don't need any special condition for removing the root
-int RBTree::removeNode(Node*& current, Node* parent, int theint) {
+//recursively finde the int to delete in the tree, and then delete it and reorganize the tree
+int RBTree::removeNode(Node*& current, Node* parent, int theint, bool erase) { //erase is if we remove all of the int from the tree, as opposed to just one
     if (current == NIL) { //if we ran out of nodes, that means the int isn't in the tree, so return an error value
         return -1; //there can't be negative ints in the tree so -1 is the error value
     } //recurse to the left or right branch, depending on if it's < or > the current data, since that's how BSTs work
     if (theint < current->getData()) { //keep recursing to the left, and return whatever result is found there
-        return removeNode(current->getNext(0), current, theint);
+        return removeNode(current->getNext(0), current, theint, erase);
     } else if (theint > current->getData()) { //keep recursing to the right, and return whatever result is found there
-        return removeNode(current->getNext(1), current, theint);
+        return removeNode(current->getNext(1), current, theint, erase);
     }
     current->decrement(); //decrease amount of the int stored
-    if (current->getAmount()) { //if there's still some of the int left in the node, we don't delete anything and return how much are left
+    if (!erase && current->getAmount()) { //if there's still some of the int left in the node (and we haven't specified to just remove all of the int), we don't delete anything and return how much are left
         return current->getAmount();
-    }
-    
-    Node* z = current;
-
-    Node* y = z;
-
-    bool redremoved = y->getRed();
-
-    Node* x = NIL;
-    Node* xpar = x->getPrev();
-
-    if (z->getNext(0) == NIL) {
-        x = z->getNext(1);
-        xpar = z->getPrev();
-        transplant(x, z);
-    } else if (z->getNext(1) == NIL) {
-        x = z->getNext(1);
-        xpar = z->getPrev();
-        transplant(x, z);
-    } else {
-        y = getSuccessor(z);
-        redremoved = y->getRed();
-        x = y->getNext(1);
-        xpar = y->getPrev();
-
-        if (y->getPrev() == z) {
-            xpar = y;
-        } else {
-            transplant(x, y);
-            y->setNext(z->getNext(1), 1);
-            y->getNext(1)->setPrev(y);
-        }
-
-        transplant(y, z);
-        y->setNext(z->getNext(0), 0);
-        y->getNext(0)->setPrev(y);
-
-        y->setRed(z->getRed());
-    }
-
-    delete z;
-
-    if (!redremoved) balanceDeletion(current, parent);
-
-    return 0;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    //store the current node as old so we can replace it but still manage it later
+    } //store current node as it was before all the processing so we can delete it later
     Node* old = current;
-    if (current->getNext(0) == NIL) { //if the left child is NIL, pull the right child into the current node of the tree. This presevres balance because both of current's children will also be greater than current's parent if current is a right child, and vice versa, which is what BSTs are supposed to do
-        current = current->getNext(1); //the right child might also be NIL, but that's fine cause if it has no children, we need to just make it NIL anyway                                                         ^                                                                                                                            |
-    } else if (current->getNext(1) == NIL) { //if the left child is not NIL, but the right child is, pull the left into its parent's slot. This also preserves balance for the vice versa reason of this comment ___|
-        current = current->getNext(0); //left child will never be NIL here
+    bool redremoved = old->getRed(); //we only have to balance the tree if the node we remove is black, so we track if it's red here
+    Node* repl = NIL; //the node that will replace whichever node is removed from the tree, which is old by default but can be the successor in the two-child case, NIL by default
+    if (old->getNext(0) == NIL) { //if the left child is NIL, pull the right child into the current node of the tree. This presevres balance because both of current's children will also be greater than current's parent if current is a right child, and vice versa, which is what BSTs are supposed to do
+        repl = old->getNext(1); //the right child might also be NIL, but that's fine cause if it has no children, we need to just make it NIL anyway                                                            ^
+        transplant(repl, old); //transplants the replacement into the old node's spot                                                                                                                           |
+    } else if (old->getNext(1) == NIL) { //if the left child is not NIL, but the right child is, pull the left into its parent's slot. This also preserves balance for the vice versa reason of this comment ___|
+        repl = old->getNext(0); //left child will never be NIL here
+        transplant(repl, old); //transplants the replacement into the old node's spot
     } else { //if both children are not NIL, so current has two children
-        Node*& nextOld = getSuccessor(current); //get the successor of the current node (the smallest node larger than it; guaranteed to preserve BST balance since it's smaller than everything else in the right, but still bigger than everything to the left), and also its old position before we move it move it
-        Node* next = nextOld; //get the old value of next before we overwrite its old position
-        nextOld = next->getNext(1); //put the right child onto where next was, so we don't abandon any children that might've been there (successor is guaranteed to have no left children, since it was found by going all the way to the left). This might be null, but if that's the case we need to nullify nextOld anyway so that works out pretty well
-        current = next; //move the successor to the old current's position in the tree
-        current->setNext(old->getNext(0), 0); //sets the new current's children to the old current's children, to preserve continuity
-        current->setNext(old->getNext(1), 1);
-    } //make sure the replacement knows its new parent since it's in a new spot now
-    if (current != NIL) {
-        current->setPrev(parent);
-    } //only balance the tree if the node that we're deleting is black, removing red nodes doesn't invalidate any of the RB tree rules
-    if (!old->getRed()) balanceDeletion(current, parent); //balance the tree starting from the old node's replacement
-    delete old; //delete the old node because that's what we're here for
+        Node* successor = getSuccessor(old); //get the successor of the current node which we will move to where old is
+        redremoved = successor->getRed(); //since we're removing the successor now, we update the color value of the node to remove
+        repl = successor->getNext(1); //we want to replace the successor with the right child, so we don't abandon it. It might be NIL, but that's fine cause in that case NIL would fill in the gap created anyway
+        if (successor->getPrev() == old) { //if we're removing old's direct right child, we have to make sure the replacement node knows the successor is its parent now
+            repl->setPrev(successor); 
+        } else { //if we're not removing old's direct right child, we have to do some extra stuff since that means the successor's right child might not be NIL, since we did some going left in addition to going right when getting the successor /\/ vs /
+            transplant(repl, successor); //transplant the successor's replacement into it to fill in the gap created by moving the successor
+            successor->setNext(old->getNext(1), 1); //set the successor's right child to old's right child because we're moving it to old's position
+            successor->getNext(1)->setPrev(successor); //updates old's old right child to the successor since it's the parent now
+        }
+        transplant(successor, old); //moves the successor to where old is because it's succeeding it
+        successor->setNext(old->getNext(0), 0); //update the old left child to be connected to the successor
+        successor->getNext(0)->setPrev(successor);
+        successor->setRed(old->getRed()); //update the successor's color to match what the old node was
+    }
+    delete old; //delete the old node because that's what we're doing all this for
+    if (!redremoved) balanceDeletion(repl); //if we removed a black node, we have to rebalance the tree cause we're probably violating the black height rule now, unless we removed the last int
     return 0; //returns confirmation that there's no more of that int left
 }
 
 //used by main to tell the tree to remove this int and check if it was successfully removed; starts the int removal process
 int RBTree::remove(int theint) { //must be its own seperate function instead of just calling removeNode because main doesn't have access to the root
-    return removeNode(root, NIL, theint);
+    return removeNode(root, NIL, theint, false);
+}
+
+//same as remove, except it removes all of the given int from the tree
+int RBTree::erase(int theint) { //eg. if we have 3 of 10 in the tree, erase would remove all three 10s
+    return removeNode(root, NIL, theint, true);
 }
 
 //formats the given node's data with its respective color and the given prefix as a string
@@ -464,5 +386,5 @@ long double RBTree::getAverage() {
     long long sum = 0; //the sum is a long long int in case we have like a million ints in the tree, so we can fit them all in this big int
     size_t count = 0; //how many integers in the tree
     censeTree(root, sum, count); //start the sum and count censusing process starting from the root
-    return 1.0L*sum/count; //prints the average (multiplied by a floatified 1 so division doesn't truncate)
+    return static_cast<long double>(sum)/count; //prints the average (as a long double so division doesn't truncate)
 }

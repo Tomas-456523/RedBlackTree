@@ -12,6 +12,8 @@ public:
 
     void insert(int theint); //called by main to insert the given int into the tree
     int remove(int theint); //called by main to remove the given int from the tree, and returns how much is left or if removal was successful (unsuccessful if negative)
+    int erase(int theint); //called by main to remove all of the given int from the tree (if there's multiple of the int)
+    int clear(); //called by main to reset the tree and delete all the nodes, leaving only a NIL root, and returns how many ints were in the tree
 
     long double getAverage(); //called by main to get the average of all ints in the tree
     Node* getNode(int query, std::string& visual); //gets the node with the specified int, and builds a visual of the path to it
@@ -27,18 +29,19 @@ private:
     Node* initNode(int data, Node* parent); //initializes a node with NIL instead of NULL pointers, and sets the parent to the given parent
     void rotateNode(Node* _node, bool right); //rotates the tree from _node in the direction passed. For example, a rotation right would be make the shape go from < to >
     void balanceInsertion(Node* current); //balances the tree after inserting a node to make it follow the RB tree rules 
-    void balanceDeletion(Node* current, Node* parent); //balances the tree after deleting a node
+    void balanceDeletion(Node* current); //balances the tree after deleting a node
 
-    Node*& getSuccessor(Node* current); //gets the next-smallest value node in the tree after the given one
+    Node* getSuccessor(Node* current); //gets the next-smallest value node in the tree after the given one
     Node*& relink(Node* node); //gets a fresh pointer reference to the given node in a way that makes it reference its parent's pointer to it
+    void transplant(Node* repl, Node* dest); //puts the replacement node in the destination's spot in the tree and links everything accordingly
 
     void addInt(Node*& current, Node* parent, int theint); //recursively finds where to put the specified int, then makes a new node for it in the found address (or increments the amount if it's already there) and calls the tree balancing process
-    int removeNode(Node*& current, Node* parent, int theint); //recursively finds the node with the integer to remove, decrements it, and deletes it if the amount reaches 0. Then adjusts the tree accordingly. Also returns how much of the int is left
+    int removeNode(Node*& current, Node* parent, int theint, bool erase); //recursively finds the node with the integer to remove, decrements it, and deletes it if the amount reaches 0. Then adjusts the tree accordingly. Also returns how much of the int is left
 
     void censeTree(Node* current, long long& sum, size_t& population); //recursively finds the sum of all ints in the tree and the amount of ints by adding up the passed counters
     bool ansiAllowed() const; //get if ansi escape codes are allowed, used by formatNode to check if it should add the codes
     std::string formatNode(Node* node, const std::string& prefix) const; //formats the node using the given prefix into a strings, and decides whether to set the text's color or just add a color label depending on if ansi escape codes are supported
-    void deleteAll(Node* current); //recursively deletes every node, called in the destructor
+    void deleteAll(Node* current, int* tally = NULL); //recursively deletes every node, called in the destructor, and optionally tallies how many ints were deleted
     
     Node* findPath(Node* current, int theint, std::string& path, const std::string& prefix, bool right = false, bool root = false); //finds the node with the given int and builds a visual of the path to it in the given string
     void printNode(std::ostream& out, Node* current, const std::string& prefix = "", bool right = false, bool root = false) const; //recursively prints a visual of the tree to the given ostream
