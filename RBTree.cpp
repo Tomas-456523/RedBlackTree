@@ -42,12 +42,11 @@ bool RBTree::ansiAllowed() const {
 }
 
 //on construction, initializes NIL and initializes the root to NIL
-RBTree::RBTree(const string& _name) : NIL(new Node(0)), root(NIL) {
+RBTree::RBTree() : NIL(new Node(0)), root(NIL) {
     NIL->setNext(NIL, 0); //NIL points to itself
     NIL->setNext(NIL, 1);
     NIL->setPrev(NIL); //NIL's parent is occasionally set during balancing, but points to itself by default
     NIL->setRed(0); //NIL is black in order to follow the RB tree rules
-    name = _name; //sets the name to what was passed
 }
 
 //recursively delete all the nodes, branch off from current and delete all descendants then delete the current node
@@ -63,11 +62,6 @@ void RBTree::deleteAll(Node* current, int* tally) { //optionally counts how many
 RBTree::~RBTree() {
     deleteAll(root); //delete all the nodes that aren't NIL
     delete NIL; //delete NIL since it's associated with the tree instance
-}
-
-//returns the name of the tree, as a reference for efficiency
-string& RBTree::getName() {
-    return name;
 }
 
 //recursively delete every node and reset the root to NIL, and return how many ints were deleted
@@ -333,7 +327,7 @@ Node* RBTree::search(int query, string& visual) {
 //recursively prints a visual representation of the tree with connecting lines (a sideways tree, can't be normalways because it would hit the edge of the terminal really quickly)
 void RBTree::printNode(ostream& out, Node* current, const string& prefix, bool right, bool root) const {
     if (current == NIL) { //no ints in the tree to print, we know this because we manually check if children are nil before recursively passing them back into this function, so if current is nil it's guaranteed to be the first call
-        out << "\nTree \"" << name << "\" is empty, no integers to print. (Type HELP for help)";
+        out << "\nTree is empty, no integers to print. (Type HELP for help)";
         return;
     }
     string curve; //the curvy line that connects the vertical line or parent to the number, defaults to "" for the root
@@ -431,9 +425,4 @@ RBStatus RBTree::verify() {
     status.blackHeight = checkNode(root, status, numeric_limits<int>::min(), numeric_limits<int>::max()); //also sets the initial bounds to anything within the 32-bit integer limit
 
     return status; //return the data we just collected
-}
-
-//renames the tree to whatever name is passed
-void RBTree::rename(string& _name) {
-    name = _name;
 }

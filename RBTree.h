@@ -24,18 +24,16 @@ struct RBStatus { //contains checks for if the RB tree is valid
 
 class RBTree {
 public:
-    RBTree(const std::string& _name); //initializes NIL and the root
+    RBTree(); //initializes NIL and the root
     ~RBTree(); //destroys all the nodes including NIL on deletion
 
     void insert(int theint); //called by main to insert the given int into the tree
     int remove(int theint); //called by main to remove the given int from the tree, and returns how much is left or if removal was successful (unsuccessful if negative)
     int erase(int theint); //called by main to remove all of the given int from the tree (if there's multiple of the int)
     int clear(); //called by main to reset the tree and delete all the nodes, leaving only a NIL root, and returns how many ints were in the tree
-    void rename(std::string& _name); //renames the tree to whatever was passed
 
     long double getAverage(); //called by main to get the average of all ints in the tree
     Node* search(int query, std::string& visual); //gets the node with the specified int, and builds a visual of the path to it
-    std::string& getName(); //gets the name of the tree
 
     RBStatus verify(); //returns a bunch of checks to verify that the tree follows all the RB tree properties
 
@@ -46,7 +44,6 @@ public:
 private:
     Node* const NIL; //the sentinel NIL, used instead of NULL pointers for convenience
     Node* root; //the root of the tree, starts as NIL
-    std::string name; //what the tree is called
 
     Node* initNode(int data, Node* parent); //initializes a node with NIL instead of NULL pointers, and sets the parent to the given parent
     void rotateNode(Node* _node, bool right); //rotates the tree from _node in the direction passed. For example, a rotation right would be make the shape go from < to >

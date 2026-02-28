@@ -3,11 +3,13 @@
 *  This program is a red-black tree that stores integers from 1 to 999. It is a binary search tree that balances itself
 *  every time an item is added or removed, according to the official red-black tree rules. The user can ADD strings of
 *  integers manually,or READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored
-*  in the same node. The user cannot REMOVE a specified integer from the tree, because this feature has not been
-*  implemented yet as of RB Tree Part 1. The user can SEARCH to find if an integer is in the tree, and also PRINT the
-*  whole tree. They can also print the AVERAGE of all the ints in the tree.
+*  in the same node. The user can REMOVE a specified integer from the tree, or ERASE its node completely (meaning all
+*  duplicates get removed at once). The user can also CLEAR the tree, deleting all nodes and resetting the tree to its
+*  initial state. The user can SEARCH to find if an integer is in the tree, and also PRINT a visual of the tree. They
+*  can also print the AVERAGE of all the ints in the tree, and VERIFY that the tree follows all the rules below.
 *  
 *  RED-BLACK TREE RULES:
+*  0. All of a node's left descendants have a lower value, while all right descendants have a greater value.
 *  1. The root is black
 *  2. All leaves (NIL nodes) are black
 *  3. Red nodes have only black children
@@ -123,7 +125,7 @@ void readInts(RBTree& tree) {
 //gets an integer to remove from the tree and starts the integer removal process
 void removeInt(RBTree& tree, bool erase) { //erase is if we should remove all of that integer as opposed to just one
     if (tree.empty()) { //error text and return if there's no tree to remove from yet
-        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to remove. (Type HELP for help)";
+        cout << "\nTree is empty, no integers to remove. (Type HELP for help)";
         return;
     }
     cout << "\nWhich integer do you want to remove?"; //prompt!
@@ -143,7 +145,7 @@ void removeInt(RBTree& tree, bool erase) { //erase is if we should remove all of
 //clears all the ints from the tree, resetting it to its initial state
 void clearTree(RBTree& tree) {
     if (tree.empty()) { //error text and return if the tree is empty already, just for consistency since the other functions say something similar
-        cout << "\nTree \"" << tree.getName() << "\" is already empty. (Type HELP for help)";
+        cout << "\nTree is already empty. (Type HELP for help)";
         return;
     }
     cout << "\nAre you sure? (Type YES if you're sure)\n> "; //confirms if the user is really sure, because this is a really destructive action
@@ -161,7 +163,7 @@ void clearTree(RBTree& tree) {
 //confirms if a given int is in the tree, along with a visual representation of the path to it starting from the root if it is indeed there
 void searchInt(RBTree& tree) {
     if (tree.empty()) { //error text and return because any search would return NULL (I could just go with the process normally and it would be accurate but this is just for clarity)
-        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to search for. (Type HELP for help)";
+        cout << "\nTree is empty, no integers to search for. (Type HELP for help)";
         return;
     }
     cout << "\nWhat integer do you want to search for?"; //prompt
@@ -182,7 +184,7 @@ void searchInt(RBTree& tree) {
 //finds the average of all the values in the tree and prints that
 void printAverage(RBTree& tree) {
     if (tree.empty()) { //error text and return if there's no integers in the tree to average
-        cout << "\nTree \"" << tree.getName() << "\" is empty, no integers to average. (Type HELP for help)";
+        cout << "\nTree is empty, no integers to average. (Type HELP for help)";
         return;
     } //asks the tree what its average is and prints it!
     cout << "\nTree average: " << tree.getAverage();
@@ -214,17 +216,6 @@ void verifyTree(RBTree& tree) {
     cout << "lack height from root: " << status.blackHeight;
 }
 
-//rename the tree to a new name from the user
-void renameTree(RBTree& tree) {
-    string oldname = tree.getName(); //stores the old name so we can print what we changed it from later
-    cout << "\nWhat would you like to rename tree \"" << oldname << "\" to?\n> "; //asks the user what to rename the tree, and reminds them what the tree is currently called
-    string name; //text used to get the name
-    getline(cin, name); //gets the new name from the user
-    tree.rename(name); //renames the tree to the new name!
-    if (name == oldname) cout << "\nDid not rename tree \"" << name << "\"."; //prints confirmation that the new name is the same as the old name, so we didn't change the name
-    else                 cout << "\nSuccessfully renamed tree \"" << oldname << "\" to \"" << name << "\"!"; //if we actually changed the name print the success text!
-}
-
 //the main loop
 int main() {
     string username; //tries to find the username because Rubert wants to greet the user personally
@@ -237,10 +228,10 @@ int main() {
         username[0] = toupper(static_cast<unsigned char>(username[0]));
     }
 
-    RBTree tree = RBTree(""); //the red-black tree, starts with a NIL root until something is added
+    RBTree tree = RBTree(); //the red-black tree, starts with a NIL root until something is added
 
     //welcome message with instructions with a username-based greeting if we were able to find it, and also sets precision to 3 decimal points for the average function
-    cout << "\nI've been expecting you" << (username.empty() ? "" : ", " + username) << ". I am Rubert, regent of Red-Black Trees. (Your tree handles integers 1-999)\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
+    cout << "\nI've been expecting you" << (username.empty() ? "" : ", " + username) << ". I am Rubert, regent of Red-Black Trees. Your tree handles integers 1-999.\n\nWhat would you like to do? (Type HELP for help)" << fixed << setprecision(3);
 
     string command; //the command that the user inputs into
     //continues until continuing is falsified (by typing QUIT)
@@ -250,12 +241,6 @@ int main() {
         getline(cin, command); //gets the player input
 
         AllCaps(command); //capitalizes the command for easier interpretation
-
-        //TO-DO:
-
-        //WE NEED TO UPDATE THE BIG COMMENT AT THE TOP
-
-        //edit HELP
 
         //calls function corresponding to the given command word
         if (command == "ADD") { //add integer(s)
@@ -276,10 +261,8 @@ int main() {
             printAverage(tree);
         } else if (command == "VERIFY") { //verify that the tree follows all the red-black tree rules
             verifyTree(tree);
-        } else if (command == "RENAME") { //rename the tree to a new name
-            renameTree(tree);
-        }else if (command == "HELP") { //print all valid command words
-            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nSEARCH  - Find an integer in the tree.\nAVERAGE - Calculate the average of all integers.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
+        } else if (command == "HELP") { //print all valid command words
+            cout << "\nYour command words are:\nADD     - Manually insert one or more integers (1-999).\nREAD    - Read in a string of integers (1-999) from a file.\nREMOVE  - Remove an integer from the tree.\nERASE   - Remove all instances of an integer from the tree.\nCLEAR   - Clear all integers from the tree, resetting it to its initial state.\nSEARCH  - Find an integer in the tree.\nPRINT   - Print a visual representation of the tree.\nAVERAGE - Calculate the average of all integers.\nVERIFY  - Verify that the tree follows all the RB tree rules.\nHELP    - Print all valid commands.\nQUIT    - Exit the program.";
         } else if (command == "QUIT") { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable
