@@ -1,5 +1,5 @@
 /* Tomas Carranza Echaniz
-*  2/25/26
+*  2/28/26
 *  This program is a red-black tree that stores integers from 1 to 999. It is a binary search tree that balances itself
 *  every time an item is added or removed, according to the official red-black tree rules. The user can ADD strings of
 *  integers manually,or READ in integers from a file. Nodes also track an amount of ints, so duplicates will be stored
@@ -275,4 +275,5 @@ int main() {
 
     //tree goes out of scope and gets deleted here
 }
+
 
