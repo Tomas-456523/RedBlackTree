@@ -174,9 +174,9 @@ void searchInt(RBTree& tree) {
         cout << "\n" << theint << " is not in the tree."; //so we say that and return
         return;
     } //confirm that the integer is indeed in the tree
-    cout << "\n" << theint << " is indeed in the tree";
+    cout << "\n" << theint << " is indeed in the tree ";
     if (thenode->getAmount() > 1) { //indicate how many of the int is in the tree if it isn't just one
-        cout << ", " << thenode->getAmount() << " times and";
+        cout << thenode->getAmount() << " times ";
     }
     cout << "in a " << (thenode->getRed() ? "red" : "black") << " node.\nPath:" << path; //finish the last sentence and also print the visual of the path we found
 }
@@ -275,3 +275,4 @@ int main() {
 
     //tree goes out of scope and gets deleted here
 }
+
